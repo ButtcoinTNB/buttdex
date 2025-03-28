@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ButtDex - Swap SOL and Buttcoin | Best Solana DEX for BUTTCOIN</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="ButtDex is the premier decentralized exchange for swapping SOL and Buttcoin (BUTT) with the lowest fees and best rates on Solana blockchain.">
+  <meta name="keywords" content="ButtDex, Buttcoin, BUTT, SOL, Solana DEX, cryptocurrency exchange, swap, crypto, Jupiter aggregator">
+  <meta name="author" content="ButtDex">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://buttdex.com/">
+  
+  <!-- Open Graph / Facebook Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://buttdex.com/">
+  <meta property="og:title" content="ButtDex - Swap SOL and Buttcoin | Best Solana DEX for BUTT">
+  <meta property="og:description" content="ButtDex is the premier decentralized exchange for swapping SOL and Buttcoin (BUTT) with the lowest fees and best rates on Solana blockchain.">
+  <meta property="og:image" content="https://ipfs.io/ipfs/bafkreic4h3qlk5ezs2ajufdtfvpaqcm7ogabsj4kbghthosc6bw6s3kwry">
+  
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://buttdex.com/">
+  <meta name="twitter:title" content="ButtDex - Swap SOL and Buttcoin | Best Solana DEX for BUTT">
+  <meta name="twitter:description" content="ButtDex is the premier decentralized exchange for swapping SOL and Buttcoin (BUTT) with the lowest fees and best rates on Solana blockchain.">
+  <meta name="twitter:image" content="https://ipfs.io/ipfs/bafkreic4h3qlk5ezs2ajufdtfvpaqcm7ogabsj4kbghthosc6bw6s3kwry">
+  
+  <!-- Structured Data / JSON-LD -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ButtDex",
+      "url": "https://buttdex.com/",
+      "description": "ButtDex is the premier decentralized exchange for swapping SOL and Buttcoin (BUTT) with the lowest fees and best rates on Solana blockchain.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  </script>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="favicon.ico">
+
+  <!-- Jupiter Terminal Script (using latest v4) -->
+  <script src="https://terminal.jup.ag/main-v4.js" data-preload></script>
+
+  <!-- Ubuntu Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Custom Styles -->
+  <style>
+    body {
+      font-family: 'Ubuntu', sans-serif;
+      background-color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      width: 100%;
+      padding: 20px;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      max-height: 40px;
+      margin: 0;
+      transform: translateX(-20px);
+    }
+    
+    @media (min-width: 768px) {
+      .header {
+        justify-content: flex-start;
+      }
+      
+      .logo {
+        margin-left: 20px;
+        transform: none;
+      }
+    }
+
+    .main-content {
+      margin-top: 70px;
+      margin-bottom: 20px;
+      padding-bottom: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      position: relative;
+    }
+
+    h1 {
+      color: black;
+      font-size: 2rem;
+      margin-top: 1rem;
+      margin-bottom: 2rem;
+      max-width: 400px;
+      font-family: 'Ubuntu', sans-serif;
+      text-align: center;
+    }
+
+    .title-special {
+      font-style: italic;
+      -webkit-text-stroke: 1px #F2A900;
+      text-shadow: 0 0 2px #F2A900;
+    }
+
+    #integrated-terminal {
+      width: 400px;
+      height: 580px;
+      margin: 0 auto;
+      margin-bottom: 0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .error-message {
+      color: #e63946;
+      padding: 10px;
+      margin-top: 0;
+      border-radius: 5px;
+      max-width: 400px;
+      text-align: center;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .info-box {
+      margin-top: 5px;
+      padding: 15px;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+      max-width: 400px;
+    }
+    
+    .community-message {
+      margin-top: -120px;
+      position: relative;
+      z-index: 5;
+      text-align: center;
+      font-size: 1rem;
+      max-width: 400px;
+      color: #333;
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+    
+    .community-message a {
+      color: #F2A900;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.2s ease;
+    }
+    
+    .community-message a:hover {
+      color: #FFB733;
+      text-decoration: underline;
+    }
+    
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      margin-top: 15px;
+      gap: 20px;
+    }
+    
+    .social-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #F2A900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    
+    .social-icon:hover {
+      transform: scale(1.1);
+      background-color: #FFB733;
+    }
+    
+    .social-icon img {
+      width: 22px;
+      height: 22px;
+      filter: invert(1);
+    }
+    
+    .footer {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 0.9rem;
+      color: #777;
+      text-align: center;
+      width: 100%;
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="https://ipfs.io/ipfs/bafkreic4h3qlk5ezs2ajufdtfvpaqcm7ogabsj4kbghthosc6bw6s3kwry" alt="ButtDex Logo" class="logo">
+  </div>
+  
+  <div class="main-content">
+    <h1 class="title-special">Welcome to the ButtDex</h1>
+    <div id="integrated-terminal"></div>
+    <div id="error-container" class="error-message" style="display: none;"></div>
+    <div class="community-message">
+      Buttcoin is the next Bitcoin: swap on ButtDex to help <a href="https://t.me/buttcointnbsol" target="_blank">the community</a> grow!
+    </div>
+    
+    <div class="social-icons">
+      <a href="https://x.com/ButtcoinTNB" target="_blank" class="social-icon" title="Follow on X">
+        <img src="https://cdn-icons-png.flaticon.com/512/124/124021.png" alt="X Logo">
+      </a>
+      <a href="https://tiktok.com/@ButtcoinTNB" target="_blank" class="social-icon" title="Follow on TikTok">
+        <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok Logo">
+      </a>
+      <a href="https://instagram.com/buttcointnb" target="_blank" class="social-icon" title="Follow on Instagram">
+        <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram Logo">
+      </a>
+      <a href="https://thenextbitcoin.fun" target="_blank" class="social-icon" title="Visit Website">
+        <img src="https://cdn-icons-png.flaticon.com/512/1150/1150626.png" alt="Website">
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    2025, Buttcoin - The Next Bitcoin
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const errorContainer = document.getElementById('error-container');
+      
+      // List of fallback RPC endpoints to try
+      const rpcEndpoints = [
+        "https://tame-wispy-sunset.solana-mainnet.quiknode.pro/6004706cdd1ee3b1c97ba63416f622fd874d02d8/", // Your original QuickNode endpoint
+        "https://mainnet.helius-rpc.com/?api-key=15319960-0e10-4e0c-a412-4fe102184328", // Helius demo RPC
+        "https://api.mainnet-beta.solana.com", // Solana's public RPC (often rate limited)
+        "https://rpc.ankr.com/solana", // Ankr's public RPC
+      ];
+      
+      // Start the initialization process
+      let currentEndpointIndex = 0;
+      initJupiterWithEndpoint(rpcEndpoints[currentEndpointIndex]);
+      
+      // Function to handle errors and try next endpoint
+      function initJupiterWithEndpoint(currentEndpoint) {
+        console.log("Initializing Jupiter with endpoint:", currentEndpoint);
+        
+        try {
+          // Check if there's an existing instance and resume it
+          if (window.Jupiter._instance) {
+            window.Jupiter.resume();
+          } else {
+            window.Jupiter.init({
+              displayMode: "integrated",
+              integratedTargetId: "integrated-terminal",
+              endpoint: currentEndpoint,
+              
+              // Set tokens based on values (SOL first, then BUTTCOIN)
+              formProps: {
+                initialInputMint: "So11111111111111111111111111111111111111112", // SOL
+                initialOutputMint: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump", // BUTTCOIN
+                fixedOutputMint: false,
+                initialSlippageBps: 50, // 0.5% slippage
+                showBalance: true,
+                showToken: true
+              },
+              
+              // Platform fee accounts
+              platformFeeAndAccounts: [{
+                feeBps: 99, // 0.99% fee
+                feeAccount: "4R76yfzn8Gg9kbZ5dYfQSveGNUTaonheT92kEC3ao3w5"
+              }],
+              
+              // Simplified theme settings - using their documented approach
+              appearance: "dark",
+              
+              // Container styles (only using basic CSS-in-JS properties)
+              containerStyles: { 
+                width: "100%",
+                borderRadius: "20px",
+                boxShadow: "0 0 20px rgba(242, 169, 0, 0)",
+                backgroundColor: "#F2A900", // Adding explicit dark background color
+                padding: "0",
+                margin: "0",
+                marginBottom: "0"
+              },
+              
+              // Adding a class for additional customization
+              containerClassName: "jupiter-terminal-custom",
+              
+              onSuccess: ({ txid }) => {
+                console.log("Swap successful! TxID:", txid);
+                // Hide any error messages on success
+                if (errorContainer) errorContainer.style.display = 'none';
+              },
+              onSwapError: ({ error }) => {
+                console.error("Swap error:", error);
+                if (rpcEndpoints.length > 1) {
+                  // Try the next endpoint
+                  currentEndpointIndex = (currentEndpointIndex + 1) % rpcEndpoints.length;
+                  const nextEndpoint = rpcEndpoints[currentEndpointIndex];
+                  
+                  // Display error and retry message
+                  displayError(`RPC connection failed. Trying next endpoint: ${nextEndpoint}`);
+                  
+                  // Try to init with the next endpoint
+                  initJupiterWithEndpoint(nextEndpoint);
+                } else {
+                  displayError("Swap failed. Please try again later.");
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Jupiter initialization error:", error);
+          displayError("Failed to initialize Jupiter Terminal. Please refresh and try again.");
+        }
+      }
+      
+      // Display error messages in the error container
+      function displayError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+          errorContainer.style.display = 'block';
+          errorContainer.textContent = message;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

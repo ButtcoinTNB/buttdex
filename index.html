@@ -456,14 +456,13 @@
       
       // Securely get RPC endpoints without exposing API keys
       function getSecureRpcEndpoints() {
-        // Get endpoints array - with QuickNode from environment variable as primary
-        // Then fallback to public endpoints if the primary fails
+        // Prioritize Solana's public RPC first, then QuickNode, then other public endpoints
         return [
-          window.QUICKNODE_URL, // Primary QuickNode RPC from env variable (set in Vercel)
+          "https://api.mainnet-beta.solana.com", // Solana's public RPC as default
+          window.QUICKNODE_URL, // QuickNode RPC from env variable as first fallback
           "https://solana-mainnet.rpc.extrnode.com", // Extrnode public RPC
           "https://solana.rpcpool.com", // RPCPool public RPC
           "https://rpc.ankr.com/solana", // Ankr public RPC
-          "https://api.mainnet-beta.solana.com", // Solana's public RPC (often rate limited)
           "https://solana-api.projectserum.com" // Project Serum RPC
         ].filter(Boolean); // Filter out any undefined/null endpoints (in case env var isn't set)
       }
@@ -508,7 +507,20 @@
                 fixedOutputMint: false,
                 initialSlippageBps: 50, // 0.5% slippage
                 showBalance: true,
-                showToken: true
+                showToken: true,
+                // Add wallet balance cache config to help with balance issues
+                walletBalanceCache: {
+                  ttl: 30000, // 30 seconds time-to-live
+                  refreshInterval: 20000 // Refresh balance every 20 seconds
+                }
+              },
+              
+              // RPC pool configuration to avoid showing insufficient balance during loading
+              rpcPoolConfig: {
+                retries: 3, // Number of retries per RPC call
+                maxRetries: 10, // Maximum number of retries overall
+                timeout: 10000, // 10 seconds timeout
+                balanceRefreshInterval: 15000 // Refresh balance every 15 seconds
               },
               
               // Explicitly enable wrapping and unwrapping SOL
@@ -594,9 +606,12 @@
                 }
               },
               onScreenUpdate: (screen) => {
-                // Monitor for RPC errors and take action if needed
+                // Monitor for RPC errors or insufficient balance issues and take action if needed
                 if (screen && screen.error && screen.error.message && 
-                    (screen.error.message.includes("RPC") || screen.error.message.includes("timeout"))) {
+                    (screen.error.message.includes("RPC") || 
+                     screen.error.message.includes("timeout") || 
+                     screen.error.message.includes("not responding") ||
+                     screen.error.message.includes("insufficient balance"))) {
                   // Try another endpoint automatically
                   currentEndpointIndex = (currentEndpointIndex + 1) % rpcEndpoints.length;
                   const nextEndpoint = rpcEndpoints[currentEndpointIndex];

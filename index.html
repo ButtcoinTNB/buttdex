@@ -73,6 +73,59 @@
       --shadow-color: rgba(242, 169, 0, 0);
     }
 
+    /* Add styles to fix Jupiter token selector dropdown */
+    .jupiter-terminal-custom {
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* These selectors target the Jupiter token search dropdown and make it appear above other content */
+    div[data-testid="TOKEN_SELECTOR_DIALOG"] {
+      position: relative !important;
+      z-index: 9999 !important;
+    }
+    
+    /* Ensure the search input and results show correctly */
+    div[data-testid="TOKEN_SELECTOR_DIALOG"] input,
+    div[data-testid="TOKEN_SELECTOR_DIALOG"] ul {
+      z-index: 9999 !important;
+    }
+    
+    /* Fix for modal overlay to ensure it covers other content */
+    .ReactModalPortal > div {
+      z-index: 9999 !important;
+    }
+    
+    /* Additional fixes for search input positioning */
+    div[role="dialog"] {
+      z-index: 9999 !important;
+      position: absolute !important;
+    }
+    
+    /* Ensure token search dialog is properly positioned */
+    .jup-container div[role="dialog"] {
+      top: 0 !important;
+      position: absolute !important;
+      width: 100% !important;
+      max-height: 90vh !important;
+      overflow-y: auto !important;
+    }
+    
+    /* Override any problematic modal positioning */
+    [data-reach-dialog-overlay] {
+      z-index: 9999 !important;
+    }
+    
+    [data-reach-dialog-content] {
+      z-index: 9999 !important;
+      position: relative !important;
+    }
+    
+    /* Ensure modal content appears above other elements */
+    div[data-rk] {
+      z-index: 999 !important;
+    }
+
     [data-theme="dark"] {
       --background-color: #121212;
       --text-color: white;
@@ -484,7 +537,9 @@
                 backgroundColor: "var(--terminal-bg-color)",
                 padding: "0",
                 margin: "0",
-                marginBottom: "0"
+                marginBottom: "0",
+                position: "relative", // Add positioning context
+                zIndex: 1 // Base z-index for the container
               },
               
               // Adding a class for additional customization

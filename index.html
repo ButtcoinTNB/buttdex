@@ -415,70 +415,6 @@
         ].filter(Boolean); // Filter out any undefined/null endpoints (in case env var isn't set)
       }
       
-      // Function to update Phantom's RPC to match Jupiter's endpoint
-      // This helps ensure wallet balances are displayed correctly
-      async function syncPhantomRPC() {
-        try {
-          if (window.phantom && window.phantom.solana && window.Jupiter && window.Jupiter._instance) {
-            // Get current Jupiter RPC endpoint
-            const jupiterRPC = window.Jupiter._instance.connection.rpcEndpoint;
-            
-            // Check if we have a valid RPC URL
-            if (jupiterRPC && jupiterRPC.startsWith('http')) {
-              console.log("Syncing Phantom RPC with Jupiter:", jupiterRPC);
-              
-              // Ask Phantom to use the same RPC endpoint
-              // This isn't always guaranteed to work as Phantom may limit which RPCs are allowed
-              await window.phantom.solana.request({
-                method: 'setRpcEndpoint',
-                params: [jupiterRPC]
-              });
-              
-              console.log("Synced Phantom RPC with Jupiter Terminal");
-            }
-          }
-        } catch (error) {
-          console.error("Failed to sync Phantom RPC:", error);
-        }
-      }
-      
-      // Function to ensure accurate wallet balance
-      async function ensureAccurateBalance() {
-        try {
-          // First sync the RPC endpoint
-          await syncPhantomRPC();
-          
-          // Get the wallet public key if available
-          const phantomWalletPublicKey = window.phantom?.solana?.publicKey?.toString();
-          
-          if (phantomWalletPublicKey && window.Jupiter && window.Jupiter._instance) {
-            console.log("Fetching balance directly for wallet:", phantomWalletPublicKey);
-            
-            // Force the Jupiter instance to get fresh balances
-            if (typeof window.Jupiter.refreshWallet === 'function') {
-              await window.Jupiter.refreshWallet();
-              console.log("Refreshed wallet balances");
-            }
-            
-            // Give a bit of time for balance to update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // If we've made it this far, we can try to force the Jupiter instance to update
-            // by triggering a state update
-            if (window.Jupiter._instance && window.Jupiter._instance.update) {
-              try {
-                window.Jupiter._instance.update();
-                console.log("Triggered Jupiter instance update");
-              } catch (updateError) {
-                console.error("Error updating Jupiter instance:", updateError);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Failed to ensure accurate balance:", error);
-        }
-      }
-      
       // Get secure endpoints
       const rpcEndpoints = getSecureRpcEndpoints();
       
@@ -519,20 +455,7 @@
                 fixedOutputMint: false,
                 initialSlippageBps: 50, // 0.5% slippage
                 showBalance: true,
-                showToken: true,
-                // Increase timeout settings to help with balance fetching
-                walletBalanceCache: {
-                  ttl: 30000, // 30 seconds cache
-                  refreshInterval: 20000 // 20 seconds refresh
-                }
-              },
-              
-              // Avoid showing insufficient balance during loading
-              rpcPoolConfig: {
-                retriesOnly: true,
-                maxRetries: 3,
-                timeoutInMs: 15000,
-                balanceRefreshInterval: 20000
+                showToken: true
               },
               
               // Platform fee accounts
@@ -578,55 +501,6 @@
                 sessionStorage.setItem('phantom_connection_active', 'true');
                 // Store the connected wallet public key
                 sessionStorage.setItem('connected_wallet_pubkey', walletPublicKey);
-                
-                // Run balance accuracy check
-                setTimeout(async () => {
-                  // First try our enhanced balance function
-                  await ensureAccurateBalance();
-                  
-                  // If we're inside Phantom's browser, we might need additional steps
-                  const isInPhantomBrowser = window.location.href.includes('phantom.app') || 
-                                           window.navigator.userAgent.includes('Phantom') ||
-                                           (typeof window.phantom !== 'undefined');
-                  
-                  if (isInPhantomBrowser) {
-                    // Check for wallet public key mismatch
-                    const phantomPubkey = window.phantom?.solana?.publicKey?.toString();
-                    if (phantomPubkey && phantomPubkey !== walletPublicKey) {
-                      console.log("Detected wallet mismatch, refreshing connection");
-                      // Schedule a refresh to force balance update
-                      setTimeout(() => {
-                        if (window.Jupiter && window.Jupiter._instance) {
-                          // Force wallet disconnect and reconnect
-                          window.Jupiter.disconnect().then(() => {
-                            // After disconnect, reconnect
-                            setTimeout(() => {
-                              if (window.phantom && window.phantom.solana) {
-                                window.phantom.solana.connect()
-                                  .then(result => {
-                                    console.log("Reconnected with correct wallet");
-                                    // Sync RPC again after reconnect
-                                    ensureAccurateBalance(); // Use our enhanced function
-                                  })
-                                  .catch(err => console.error("Failed to reconnect:", err));
-                              }
-                            }, 500);
-                          });
-                        }
-                      }, 1000);
-                    } else {
-                      // If no mismatch but we still might have balance issues,
-                      // try forcing a refresh of the Jupiter instance
-                      window.Jupiter.refreshWallet?.().catch(err => {
-                        console.log("Error refreshing wallet, will try full refresh:", err);
-                        setTimeout(() => {
-                          // If simple refresh fails, try a full refresh
-                          refreshJupiterTerminal(); // Use the global refresh function
-                        }, 1000);
-                      });
-                    }
-                  }
-                }, 1000);
               },
               
               // Handle wallet disconnection
@@ -635,65 +509,6 @@
                 // Clear connection state
                 sessionStorage.removeItem('phantom_connection_active');
                 sessionStorage.removeItem('connected_wallet_pubkey');
-                
-                // Fix the unclickable connect button issue by scheduling a refresh
-                setTimeout(() => {
-                  if (window.Jupiter && window.Jupiter._instance) {
-                    // Store current endpoint
-                    const currentEndpoint = window.Jupiter._instance?.connection?.rpcEndpoint;
-                    
-                    // Close and reinitialize 
-                    if (window.Jupiter.close) {
-                      window.Jupiter.close();
-                      setTimeout(() => {
-                        // Reinitialize with the same configuration
-                        if (window.Jupiter && window.Jupiter.init) {
-                          window.Jupiter.init({
-                            displayMode: "integrated",
-                            integratedTargetId: "integrated-terminal",
-                            endpoint: currentEndpoint || window.QUICKNODE_URL,
-                            
-                            formProps: {
-                              initialInputMint: "So11111111111111111111111111111111111111112", // SOL
-                              initialOutputMint: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump", // BUTTCOIN
-                              fixedOutputMint: false,
-                              initialSlippageBps: 50, // 0.5% slippage
-                              showBalance: true,
-                              showToken: true
-                            },
-                            
-                            // Platform fee accounts
-                            platformFeeAndAccounts: [{
-                              feeBps: 99, // 0.99% fee
-                              feeAccount: "4R76yfzn8Gg9kbZ5dYfQSveGNUTaonheT92kEC3ao3w5"
-                            }],
-                            
-                            prioritizationFeeLamports: "auto",
-                            dynamicComputeUnitLimit: true,
-                            appearance: "dark",
-                            
-                            containerStyles: { 
-                              width: "100%",
-                              borderRadius: "20px",
-                              boxShadow: `0 0 20px var(--shadow-color)`,
-                              backgroundColor: "var(--terminal-bg-color)",
-                              padding: "0",
-                              margin: "0",
-                              marginBottom: "0"
-                            },
-                            
-                            containerClassName: "jupiter-terminal-custom"
-                          });
-                          
-                          // Handle terminal ready state
-                          setTimeout(() => {
-                            terminalWrapper.classList.add('jupiter-ready');
-                          }, 1500);
-                        }
-                      }, 1000);
-                    }
-                  }
-                }, 500);
               },
               
               onSwapError: ({ error }) => {
@@ -887,19 +702,6 @@
                     .then(result => {
                       console.log("Successfully connected to Phantom wallet:", result.publicKey.toString());
                       sessionStorage.setItem('phantom_connection_active', 'true');
-                      
-                      // Refresh the Jupiter instance to update balances
-                      setTimeout(() => {
-                        // Use our enhanced balance accuracy function
-                        ensureAccurateBalance().then(() => {
-                          // After ensuring balance, refresh terminal if needed
-                          refreshJupiterTerminal();
-                        }).catch(err => {
-                          console.error("Error ensuring balance accuracy:", err);
-                          // Fall back to terminal refresh
-                          refreshJupiterTerminal();
-                        });
-                      }, 1000);
                     })
                     .catch(err => {
                       console.log("Auto-connect failed, will try manual connect:", err);
@@ -960,19 +762,6 @@
                         .then(result => {
                           console.log("Successfully connected to Phantom wallet:", result.publicKey.toString());
                           sessionStorage.setItem('phantom_connection_active', 'true');
-                          
-                          // Refresh the Jupiter instance to update balances
-                          setTimeout(() => {
-                            // Use our enhanced balance accuracy function
-                            ensureAccurateBalance().then(() => {
-                              // After ensuring balance, refresh terminal if needed
-                              refreshJupiterTerminal();
-                            }).catch(err => {
-                              console.error("Error ensuring balance accuracy:", err);
-                              // Fall back to terminal refresh
-                              refreshJupiterTerminal();
-                            });
-                          }, 1000);
                         })
                         .catch(err => console.error("Failed to connect to Phantom wallet:", err));
                     } else {

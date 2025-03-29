@@ -186,7 +186,7 @@
     }
     
     .community-message {
-      margin-top: -120px;
+      margin-top: 0px;
       position: relative;
       z-index: 5;
       text-align: center;
@@ -415,6 +415,33 @@
         ].filter(Boolean); // Filter out any undefined/null endpoints (in case env var isn't set)
       }
       
+      // Function to update Phantom's RPC to match Jupiter's endpoint
+      // This helps ensure wallet balances are displayed correctly
+      async function syncPhantomRPC() {
+        try {
+          if (window.phantom && window.phantom.solana && window.Jupiter && window.Jupiter._instance) {
+            // Get current Jupiter RPC endpoint
+            const jupiterRPC = window.Jupiter._instance.connection.rpcEndpoint;
+            
+            // Check if we have a valid RPC URL
+            if (jupiterRPC && jupiterRPC.startsWith('http')) {
+              console.log("Syncing Phantom RPC with Jupiter:", jupiterRPC);
+              
+              // Ask Phantom to use the same RPC endpoint
+              // This isn't always guaranteed to work as Phantom may limit which RPCs are allowed
+              await window.phantom.solana.request({
+                method: 'setRpcEndpoint',
+                params: [jupiterRPC]
+              });
+              
+              console.log("Synced Phantom RPC with Jupiter Terminal");
+            }
+          }
+        } catch (error) {
+          console.error("Failed to sync Phantom RPC:", error);
+        }
+      }
+      
       // Get secure endpoints
       const rpcEndpoints = getSecureRpcEndpoints();
       
@@ -487,11 +514,181 @@
               // Adding a class for additional customization
               containerClassName: "jupiter-terminal-custom",
               
+              // Handle successful transactions
               onSuccess: ({ txid }) => {
                 console.log("Swap successful! TxID:", txid);
                 // Hide any error messages on success
                 if (errorContainer) errorContainer.style.display = 'none';
               },
+              
+              // Handle wallet connection events
+              onWalletConnect: ({ walletPublicKey }) => {
+                console.log("Wallet connected:", walletPublicKey);
+                // Store connection state
+                sessionStorage.setItem('phantom_connection_active', 'true');
+                // Store the connected wallet public key
+                sessionStorage.setItem('connected_wallet_pubkey', walletPublicKey);
+                
+                // If we're inside Phantom's browser, we might need to refresh
+                // to ensure proper balance display
+                const isInPhantomBrowser = window.location.href.includes('phantom.app') || 
+                                         window.navigator.userAgent.includes('Phantom') ||
+                                         (typeof window.phantom !== 'undefined');
+                
+                if (isInPhantomBrowser) {
+                  // Try to sync RPC endpoints first to help with balance display
+                  syncPhantomRPC().then(() => {
+                    // Short delay to let the RPC change take effect
+                    setTimeout(() => {
+                      // Check for wallet public key mismatch
+                      const phantomPubkey = window.phantom?.solana?.publicKey?.toString();
+                      if (phantomPubkey && phantomPubkey !== walletPublicKey) {
+                        console.log("Detected wallet mismatch, refreshing connection");
+                        // Schedule a refresh to force balance update
+                        setTimeout(() => {
+                          if (window.Jupiter && window.Jupiter._instance) {
+                            // Force wallet disconnect and reconnect
+                            window.Jupiter.disconnect().then(() => {
+                              // After disconnect, reconnect
+                              setTimeout(() => {
+                                if (window.phantom && window.phantom.solana) {
+                                  window.phantom.solana.connect()
+                                    .then(() => {
+                                      console.log("Reconnected with correct wallet");
+                                      // Sync RPC again after reconnect
+                                      syncPhantomRPC();
+                                    })
+                                    .catch(err => console.error("Failed to reconnect:", err));
+                                }
+                              }, 500);
+                            });
+                          }
+                        }, 1000);
+                      } else {
+                        // If no mismatch but we still might have balance issues,
+                        // try forcing a refresh of the Jupiter instance
+                        window.Jupiter.refreshWallet?.().catch(err => {
+                          console.log("Error refreshing wallet, will try full refresh:", err);
+                          setTimeout(() => {
+                            // If simple refresh fails, try a full refresh
+                            if (window.Jupiter && window.Jupiter._instance) {
+                              const currentEndpoint = window.Jupiter._instance.connection.rpcEndpoint;
+                              if (window.Jupiter.close) {
+                                window.Jupiter.close();
+                                setTimeout(() => {
+                                  if (window.Jupiter && window.Jupiter.init) {
+                                    console.log("Full refresh of Jupiter Terminal");
+                                    window.Jupiter.init({
+                                      displayMode: "integrated",
+                                      integratedTargetId: "integrated-terminal",
+                                      endpoint: currentEndpoint || window.QUICKNODE_URL,
+                                      formProps: {
+                                        initialInputMint: "So11111111111111111111111111111111111111112",
+                                        initialOutputMint: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump",
+                                        fixedOutputMint: false,
+                                        initialSlippageBps: 50,
+                                        showBalance: true,
+                                        showToken: true
+                                      },
+                                      platformFeeAndAccounts: [{
+                                        feeBps: 99,
+                                        feeAccount: "4R76yfzn8Gg9kbZ5dYfQSveGNUTaonheT92kEC3ao3w5"
+                                      }],
+                                      prioritizationFeeLamports: "auto",
+                                      dynamicComputeUnitLimit: true,
+                                      appearance: "dark",
+                                      containerStyles: { 
+                                        width: "100%",
+                                        borderRadius: "20px",
+                                        boxShadow: `0 0 20px var(--shadow-color)`,
+                                        backgroundColor: "var(--terminal-bg-color)",
+                                        padding: "0",
+                                        margin: "0",
+                                        marginBottom: "0"
+                                      },
+                                      containerClassName: "jupiter-terminal-custom"
+                                    });
+                                  }
+                                }, 500);
+                              }
+                            }
+                          }, 1000);
+                        });
+                      }
+                    }, 500);
+                  }).catch(err => {
+                    console.error("Error syncing RPC endpoints:", err);
+                  });
+                }
+              },
+              
+              // Handle wallet disconnection
+              onWalletDisconnect: () => {
+                console.log("Wallet disconnected");
+                // Clear connection state
+                sessionStorage.removeItem('phantom_connection_active');
+                sessionStorage.removeItem('connected_wallet_pubkey');
+                
+                // Fix the unclickable connect button issue by scheduling a refresh
+                setTimeout(() => {
+                  if (window.Jupiter && window.Jupiter._instance) {
+                    // Store current endpoint
+                    const currentEndpoint = window.Jupiter._instance?.connection?.rpcEndpoint;
+                    
+                    // Close and reinitialize 
+                    if (window.Jupiter.close) {
+                      window.Jupiter.close();
+                      setTimeout(() => {
+                        // Reinitialize with the same configuration
+                        if (window.Jupiter && window.Jupiter.init) {
+                          window.Jupiter.init({
+                            displayMode: "integrated",
+                            integratedTargetId: "integrated-terminal",
+                            endpoint: currentEndpoint || window.QUICKNODE_URL,
+                            
+                            formProps: {
+                              initialInputMint: "So11111111111111111111111111111111111111112", // SOL
+                              initialOutputMint: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump", // BUTTCOIN
+                              fixedOutputMint: false,
+                              initialSlippageBps: 50, // 0.5% slippage
+                              showBalance: true,
+                              showToken: true
+                            },
+                            
+                            // Platform fee accounts
+                            platformFeeAndAccounts: [{
+                              feeBps: 99, // 0.99% fee
+                              feeAccount: "4R76yfzn8Gg9kbZ5dYfQSveGNUTaonheT92kEC3ao3w5"
+                            }],
+                            
+                            prioritizationFeeLamports: "auto",
+                            dynamicComputeUnitLimit: true,
+                            appearance: "dark",
+                            
+                            containerStyles: { 
+                              width: "100%",
+                              borderRadius: "20px",
+                              boxShadow: `0 0 20px var(--shadow-color)`,
+                              backgroundColor: "var(--terminal-bg-color)",
+                              padding: "0",
+                              margin: "0",
+                              marginBottom: "0"
+                            },
+                            
+                            containerClassName: "jupiter-terminal-custom"
+                          });
+                          
+                          // Handle terminal ready state
+                          setTimeout(() => {
+                            terminalWrapper.classList.add('jupiter-ready');
+                          }, 1500);
+                        }
+                      }, 1000);
+                    }
+                  }
+                }, 500);
+              },
+              
               onSwapError: ({ error }) => {
                 console.error("Swap error:", error);
                 if (rpcEndpoints.length > 1) {
@@ -575,7 +772,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       // Create a function to check if Jupiter Terminal is ready
       function checkJupiterReady() {
-        if (window.Jupiter && window.Jupiter.init) {
+        if (window.Jupiter && typeof window.Jupiter.init === 'function') {
           initPhantomRedirectHelper();
         } else {
           // If not ready yet, check again soon
@@ -595,10 +792,128 @@
                                    window.navigator.userAgent.includes('Phantom') ||
                                    (typeof window.phantom !== 'undefined');
         
+        // Create a function to refresh Jupiter Terminal to fix reconnection issues
+        function refreshJupiterTerminal() {
+          // Only execute if Jupiter instance exists
+          if (window.Jupiter && window.Jupiter._instance) {
+            console.log("Refreshing Jupiter Terminal instance");
+            
+            // Store the current endpoint
+            const currentEndpoint = window.Jupiter._instance?.connection?.rpcEndpoint;
+            
+            // Close the current instance
+            if (window.Jupiter.close) {
+              window.Jupiter.close();
+            }
+            
+            // Wait a short delay and reinitialize with the same endpoint
+            setTimeout(() => {
+              if (window.Jupiter && window.Jupiter.init) {
+                console.log("Reinitializing Jupiter with endpoint:", currentEndpoint);
+                window.Jupiter.init({
+                  // Use the same configuration as your original initialization
+                  displayMode: "integrated",
+                  integratedTargetId: "integrated-terminal",
+                  endpoint: currentEndpoint || window.QUICKNODE_URL,
+                  
+                  formProps: {
+                    initialInputMint: "So11111111111111111111111111111111111111112", // SOL
+                    initialOutputMint: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump", // BUTTCOIN
+                    fixedOutputMint: false,
+                    initialSlippageBps: 50,
+                    showBalance: true,
+                    showToken: true
+                  },
+                  
+                  platformFeeAndAccounts: [{
+                    feeBps: 99, // 0.99% fee
+                    feeAccount: "4R76yfzn8Gg9kbZ5dYfQSveGNUTaonheT92kEC3ao3w5"
+                  }],
+                  
+                  prioritizationFeeLamports: "auto",
+                  dynamicComputeUnitLimit: true,
+                  appearance: "dark",
+                  
+                  containerStyles: { 
+                    width: "100%",
+                    borderRadius: "20px",
+                    boxShadow: `0 0 20px var(--shadow-color)`,
+                    backgroundColor: "var(--terminal-bg-color)",
+                    padding: "0",
+                    margin: "0",
+                    marginBottom: "0"
+                  },
+                  
+                  containerClassName: "jupiter-terminal-custom"
+                });
+                
+                // Handle terminal ready state
+                setTimeout(() => {
+                  document.getElementById('terminal-wrapper').classList.add('jupiter-ready');
+                }, 1500);
+              }
+            }, 1000);
+          }
+        }
+        
+        // Handle session storage for state persistence
+        // Check for connection state in session storage
+        const hasConnectedBefore = sessionStorage.getItem('phantom_connection_active') === 'true';
+        
         if (isMobile) {
           // Handle behavior differently if we're already in Phantom's browser
           if (isInPhantomBrowser) {
             console.log("We are inside Phantom's browser!");
+            
+            // If we returned to Phantom browser and were previously trying to connect
+            if (sessionStorage.getItem('phantom_connect_pending') === 'true') {
+              console.log("Detected return from connection attempt");
+              sessionStorage.removeItem('phantom_connect_pending');
+              sessionStorage.setItem('phantom_connection_active', 'true');
+              
+              // Give time for the Jupiter Terminal to initialize
+              setTimeout(() => {
+                // Try to force reconnect to wallet since we're in Phantom browser
+                if (window.phantom && window.phantom.solana) {
+                  console.log("Attempting to connect to Phantom wallet");
+                  window.phantom.solana.connect({ onlyIfTrusted: true })
+                    .then(result => {
+                      console.log("Auto-connected to Phantom wallet:", result.publicKey.toString());
+                      // Refresh Jupiter to reflect connection state correctly
+                      refreshJupiterTerminal();
+                    })
+                    .catch(err => {
+                      console.log("Auto-connect failed, will try manual connect:", err);
+                      // Try to click connect button manually
+                      setTimeout(() => {
+                        const walletButtons = Array.from(document.querySelectorAll('button')).filter(
+                          button => (button.innerText.includes('Connect') || button.innerText.includes('Wallet')) &&
+                                  button.offsetParent !== null
+                        );
+                        
+                        if (walletButtons.length > 0) {
+                          console.log("Found connect button, clicking it");
+                          walletButtons[0].click();
+                          
+                          // After clicking connect, wait and look for Phantom option
+                          setTimeout(() => {
+                            const phantomOptions = Array.from(document.querySelectorAll('div')).filter(
+                              div => (div.innerText.includes('Phantom') || div.innerText.toLowerCase().includes('phantom')) && 
+                                    div.offsetParent !== null && 
+                                    !div.innerText.includes('Download')
+                            );
+                            
+                            if (phantomOptions.length > 0) {
+                              console.log("Found Phantom option, clicking it");
+                              phantomOptions[0].click();
+                            }
+                          }, 500);
+                        }
+                      }, 1000);
+                    });
+                }
+              }, 2000);
+            }
             
             // Add a special handler for wallet connection buttons when inside Phantom browser
             document.addEventListener('click', (event) => {
@@ -610,62 +925,88 @@
                    event.target.closest('button').textContent.includes('Connect') || 
                    event.target.closest('button').textContent.includes('Wallet'))) {
                 
-                // Prevent the default behavior that takes us to the download page
-                event.preventDefault();
-                event.stopPropagation();
+                // Check if this might be a Connect Wallet button
+                const isConnectButton = !event.target.textContent.includes('Disconnect');
                 
-                // Try to select the Phantom wallet directly in the Jupiter interface
-                setTimeout(() => {
-                  // Attempt to programmatically connect to Phantom
-                  if (window.phantom && window.phantom.solana && window.phantom.solana.connect) {
-                    window.phantom.solana.connect()
-                      .then(() => console.log("Successfully connected to Phantom wallet"))
-                      .catch(err => console.error("Failed to connect to Phantom wallet:", err));
-                  } else {
-                    console.log("Looking for Phantom option in the wallet list");
-                    // Look for Phantom option in any modal that might have opened
-                    const phantomOptions = Array.from(document.querySelectorAll('div')).filter(
-                      div => (div.innerText.includes('Phantom') || div.innerText.toLowerCase().includes('phantom')) && 
-                            div.offsetParent !== null && 
-                            !div.innerText.includes('Download')
-                    );
-                    
-                    // Click the first valid Phantom option
-                    if (phantomOptions.length > 0) {
-                      console.log("Found Phantom option, clicking it");
-                      phantomOptions[0].click();
+                if (isConnectButton) {
+                  // Prevent the default behavior
+                  event.preventDefault();
+                  event.stopPropagation();
+                  
+                  // Try to select the Phantom wallet directly
+                  setTimeout(() => {
+                    // Attempt to programmatically connect to Phantom
+                    if (window.phantom && window.phantom.solana && window.phantom.solana.connect) {
+                      window.phantom.solana.connect()
+                        .then(result => {
+                          console.log("Successfully connected to Phantom wallet:", result.publicKey.toString());
+                          sessionStorage.setItem('phantom_connection_active', 'true');
+                          
+                          // Refresh the Jupiter instance to update balances
+                          setTimeout(() => refreshJupiterTerminal(), 1000);
+                        })
+                        .catch(err => console.error("Failed to connect to Phantom wallet:", err));
                     } else {
-                      console.log("No Phantom option found in the wallet list");
+                      console.log("Looking for Phantom option in the wallet list");
+                      // Look for Phantom option in any modal that might have opened
+                      const phantomOptions = Array.from(document.querySelectorAll('div')).filter(
+                        div => (div.innerText.includes('Phantom') || div.innerText.toLowerCase().includes('phantom')) && 
+                              div.offsetParent !== null && 
+                              !div.innerText.includes('Download')
+                      );
+                      
+                      // Click the first valid Phantom option
+                      if (phantomOptions.length > 0) {
+                        console.log("Found Phantom option, clicking it");
+                        phantomOptions[0].click();
+                        sessionStorage.setItem('phantom_connection_active', 'true');
+                      } else {
+                        console.log("No Phantom option found in the wallet list");
+                      }
                     }
-                  }
-                }, 300);
+                  }, 300);
+                } else if (event.target.textContent.includes('Disconnect')) {
+                  // This is a disconnect button
+                  console.log("Disconnect button clicked");
+                  sessionStorage.removeItem('phantom_connection_active');
+                  
+                  // Give time for disconnect to complete
+                  setTimeout(() => {
+                    // Fix the reconnect issue by refreshing the Jupiter terminal
+                    refreshJupiterTerminal();
+                  }, 1000);
+                }
               }
             }, true);
             
           } else {
             // We're on mobile but not in Phantom browser, so use deeplink to open Phantom
             document.addEventListener('click', (event) => {
-              // Look for connect wallet buttons by common text patterns
+              // Look for connect wallet buttons
               if (event.target && 
                   event.target.closest('button') && 
                   (event.target.textContent.includes('Connect') || 
                    event.target.textContent.includes('Wallet') ||
                    event.target.closest('button').textContent.includes('Connect') || 
-                   event.target.closest('button').textContent.includes('Wallet'))) {
+                   event.target.closest('button').textContent.includes('Wallet')) &&
+                  !event.target.textContent.includes('Disconnect')) {
                 
                 // Generate the appropriate deeplink for Phantom wallet
                 let deepLink = 'https://phantom.app/ul/browse/';
                 
-                // Get the current URL
-                const currentUrl = encodeURIComponent(window.location.href);
+                // Get the current URL with any cache-busting to ensure fresh state
+                const currentUrl = encodeURIComponent(window.location.href.split('?')[0] + 
+                                                     (window.location.href.includes('?') ? '&' : '?') + 
+                                                     'cacheBuster=' + Date.now());
                 
                 // Use the browse deeplink to open current page in Phantom's in-app browser
-                deepLink += currentUrl + '?ref=' + currentUrl;
+                deepLink += currentUrl;
                 
                 // Save user's intention to connect wallet in session storage
                 sessionStorage.setItem('phantom_connect_pending', 'true');
                 
                 // Redirect to Phantom app
+                console.log("Redirecting to Phantom app:", deepLink);
                 window.location.href = deepLink;
                 
                 // Prevent default button action
@@ -675,25 +1016,18 @@
             }, true);
           }
           
-          // Check if user is returning from Phantom app with intention to connect
-          if (sessionStorage.getItem('phantom_connect_pending') === 'true') {
-            // Clear the pending flag
-            sessionStorage.removeItem('phantom_connect_pending');
-            
-            // If Jupiter is present, try to automatically open wallet selection
-            if (window.Jupiter && window.Jupiter._instance) {
-              // Find and click wallet connect button after a short delay
-              setTimeout(() => {
-                const walletButtons = Array.from(document.querySelectorAll('button')).filter(
-                  button => button.innerText.includes('Connect') || button.innerText.includes('Wallet')
-                );
-                
-                if (walletButtons.length > 0) {
-                  walletButtons[0].click();
-                }
-              }, 1000);
+          // Add a disconnect handler to fix the reconnection issue
+          document.addEventListener('click', (event) => {
+            if (event.target && 
+                event.target.closest('button') && 
+                event.target.textContent.includes('Disconnect')) {
+              console.log("Disconnect button clicked");
+              sessionStorage.removeItem('phantom_connection_active');
+              
+              // Schedule refresh of Jupiter after disconnect
+              setTimeout(() => refreshJupiterTerminal(), 1000);
             }
-          }
+          }, true);
         }
       }
     });

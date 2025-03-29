@@ -403,12 +403,16 @@
       
       // Securely get RPC endpoints without exposing API keys
       function getSecureRpcEndpoints() {
-        // In production, this would call your backend API
-        // For now, we return public endpoints that don't expose keys
+        // Get endpoints array - with QuickNode from environment variable as primary
+        // Then fallback to public endpoints if the primary fails
         return [
-          "https://api.mainnet-beta.solana.com", // Public RPC (as fallback)
-          "https://rpc.ankr.com/solana" // Public RPC without keys
-        ];
+          window.QUICKNODE_URL, // Primary QuickNode RPC from env variable (set in Vercel)
+          "https://solana-mainnet.rpc.extrnode.com", // Extrnode public RPC
+          "https://solana.rpcpool.com", // RPCPool public RPC
+          "https://rpc.ankr.com/solana", // Ankr public RPC
+          "https://api.mainnet-beta.solana.com", // Solana's public RPC (often rate limited)
+          "https://solana-api.projectserum.com" // Project Serum RPC
+        ].filter(Boolean); // Filter out any undefined/null endpoints (in case env var isn't set)
       }
       
       // Get secure endpoints
@@ -460,6 +464,12 @@
                 feeAccount: "4R76yfzn8Gg9kbZ5dYfQSveGNUTaonheT92kEC3ao3w5"
               }],
               
+              // Add prioritization fees to help transactions go through during congestion
+              prioritizationFeeLamports: "auto",
+              
+              // Optimize compute units usage
+              dynamicComputeUnitLimit: true,
+              
               // Simplified theme settings - using their documented approach
               appearance: "dark",
               
@@ -492,10 +502,37 @@
                   // Display error and retry message
                   displayError(`RPC connection failed. Trying next endpoint: ${nextEndpoint}`);
                   
-                  // Try to init with the next endpoint
-                  initJupiterWithEndpoint(nextEndpoint);
+                  // Try to init with the next endpoint - but first close the current instance
+                  if (window.Jupiter && window.Jupiter.close) {
+                    window.Jupiter.close();
+                    // Short delay before initializing with the new endpoint
+                    setTimeout(() => {
+                      initJupiterWithEndpoint(nextEndpoint);
+                    }, 500);
+                  } else {
+                    initJupiterWithEndpoint(nextEndpoint);
+                  }
                 } else {
-                  displayError("Swap failed. Please try again later.");
+                  displayError("Swap failed. Please try again later or refresh the page.");
+                }
+              },
+              onScreenUpdate: (screen) => {
+                // Monitor for RPC errors and take action if needed
+                if (screen && screen.error && screen.error.message && 
+                    (screen.error.message.includes("RPC") || screen.error.message.includes("timeout"))) {
+                  // Try another endpoint automatically
+                  currentEndpointIndex = (currentEndpointIndex + 1) % rpcEndpoints.length;
+                  const nextEndpoint = rpcEndpoints[currentEndpointIndex];
+                  
+                  displayError(`RPC issue detected. Switching to backup RPC: ${nextEndpoint}`);
+                  
+                  // Close and reinitialize with new endpoint
+                  if (window.Jupiter && window.Jupiter.close) {
+                    window.Jupiter.close();
+                    setTimeout(() => {
+                      initJupiterWithEndpoint(nextEndpoint);
+                    }, 500);
+                  }
                 }
               }
             });
@@ -508,7 +545,16 @@
           }
         } catch (error) {
           console.error("Jupiter initialization error:", error);
-          displayError("Failed to initialize Jupiter Terminal. Please refresh and try again.");
+          // Try the next endpoint in case of initialization error
+          currentEndpointIndex = (currentEndpointIndex + 1) % rpcEndpoints.length;
+          const nextEndpoint = rpcEndpoints[currentEndpointIndex];
+          
+          displayError(`Jupiter initialization failed. Trying backup RPC: ${nextEndpoint}`);
+          
+          // Try the next endpoint after a short delay
+          setTimeout(() => {
+            initJupiterWithEndpoint(nextEndpoint);
+          }, 1000);
         }
       }
       
@@ -544,41 +590,90 @@
         // Function to check if user is on mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
+        // Check if we're inside Phantom browser
+        const isInPhantomBrowser = window.location.href.includes('phantom.app') || 
+                                   window.navigator.userAgent.includes('Phantom') ||
+                                   (typeof window.phantom !== 'undefined');
+        
         if (isMobile) {
-          // Add click handler to document that delegates to wallet connect buttons
-          document.addEventListener('click', (event) => {
-            // Look for connect wallet buttons by common text patterns
-            if (event.target && 
-                event.target.closest('button') && 
-                (event.target.textContent.includes('Connect') || 
-                 event.target.textContent.includes('Wallet') ||
-                 event.target.closest('button').textContent.includes('Connect') || 
-                 event.target.closest('button').textContent.includes('Wallet'))) {
-              
-              // Check if user is on iOS or Android
-              const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-              const isAndroid = /Android/i.test(navigator.userAgent);
-              
-              // Generate the appropriate deeplink for Phantom wallet
-              let deepLink = 'https://phantom.app/ul/browse/';
-              
-              // Get the current URL
-              const currentUrl = encodeURIComponent(window.location.href);
-              
-              // Use the browse deeplink to open current page in Phantom's in-app browser
-              deepLink += currentUrl + '?ref=' + currentUrl;
-              
-              // Save user's intention to connect wallet in session storage
-              sessionStorage.setItem('phantom_connect_pending', 'true');
-              
-              // Redirect to Phantom app
-              window.location.href = deepLink;
-              
-              // Prevent default button action
-              event.preventDefault();
-              event.stopPropagation();
-            }
-          }, true);
+          // Handle behavior differently if we're already in Phantom's browser
+          if (isInPhantomBrowser) {
+            console.log("We are inside Phantom's browser!");
+            
+            // Add a special handler for wallet connection buttons when inside Phantom browser
+            document.addEventListener('click', (event) => {
+              // Look for connect wallet buttons by common text patterns
+              if (event.target && 
+                  event.target.closest('button') && 
+                  (event.target.textContent.includes('Connect') || 
+                   event.target.textContent.includes('Wallet') ||
+                   event.target.closest('button').textContent.includes('Connect') || 
+                   event.target.closest('button').textContent.includes('Wallet'))) {
+                
+                // Prevent the default behavior that takes us to the download page
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Try to select the Phantom wallet directly in the Jupiter interface
+                setTimeout(() => {
+                  // Attempt to programmatically connect to Phantom
+                  if (window.phantom && window.phantom.solana && window.phantom.solana.connect) {
+                    window.phantom.solana.connect()
+                      .then(() => console.log("Successfully connected to Phantom wallet"))
+                      .catch(err => console.error("Failed to connect to Phantom wallet:", err));
+                  } else {
+                    console.log("Looking for Phantom option in the wallet list");
+                    // Look for Phantom option in any modal that might have opened
+                    const phantomOptions = Array.from(document.querySelectorAll('div')).filter(
+                      div => (div.innerText.includes('Phantom') || div.innerText.toLowerCase().includes('phantom')) && 
+                            div.offsetParent !== null && 
+                            !div.innerText.includes('Download')
+                    );
+                    
+                    // Click the first valid Phantom option
+                    if (phantomOptions.length > 0) {
+                      console.log("Found Phantom option, clicking it");
+                      phantomOptions[0].click();
+                    } else {
+                      console.log("No Phantom option found in the wallet list");
+                    }
+                  }
+                }, 300);
+              }
+            }, true);
+            
+          } else {
+            // We're on mobile but not in Phantom browser, so use deeplink to open Phantom
+            document.addEventListener('click', (event) => {
+              // Look for connect wallet buttons by common text patterns
+              if (event.target && 
+                  event.target.closest('button') && 
+                  (event.target.textContent.includes('Connect') || 
+                   event.target.textContent.includes('Wallet') ||
+                   event.target.closest('button').textContent.includes('Connect') || 
+                   event.target.closest('button').textContent.includes('Wallet'))) {
+                
+                // Generate the appropriate deeplink for Phantom wallet
+                let deepLink = 'https://phantom.app/ul/browse/';
+                
+                // Get the current URL
+                const currentUrl = encodeURIComponent(window.location.href);
+                
+                // Use the browse deeplink to open current page in Phantom's in-app browser
+                deepLink += currentUrl + '?ref=' + currentUrl;
+                
+                // Save user's intention to connect wallet in session storage
+                sessionStorage.setItem('phantom_connect_pending', 'true');
+                
+                // Redirect to Phantom app
+                window.location.href = deepLink;
+                
+                // Prevent default button action
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }, true);
+          }
           
           // Check if user is returning from Phantom app with intention to connect
           if (sessionStorage.getItem('phantom_connect_pending') === 'true') {

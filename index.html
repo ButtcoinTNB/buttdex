@@ -62,9 +62,32 @@
 
   <!-- Custom Styles -->
   <style>
+    :root {
+      --background-color: white;
+      --text-color: black;
+      --secondary-text-color: #333;
+      --footer-text-color: #777;
+      --terminal-bg-color: #F2A900;
+      --social-bg-color: #F2A900;
+      --social-hover-color: #FFB733;
+      --shadow-color: rgba(242, 169, 0, 0);
+    }
+
+    [data-theme="dark"] {
+      --background-color: #121212;
+      --text-color: white;
+      --secondary-text-color: #e0e0e0;
+      --footer-text-color: #aaa;
+      --terminal-bg-color: #F2A900;
+      --social-bg-color: #F2A900;
+      --social-hover-color: #FFB733;
+      --shadow-color: rgba(242, 169, 0, 0.2);
+    }
+
     body {
       font-family: 'Ubuntu', sans-serif;
-      background-color: white;
+      background-color: var(--background-color);
+      color: var(--text-color);
       margin: 0;
       padding: 0;
       display: flex;
@@ -72,6 +95,7 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .header {
@@ -90,6 +114,7 @@
       max-height: 40px;
       margin: 0;
       transform: translateX(-20px);
+      transition: filter 0.3s ease;
     }
     
     @media (min-width: 768px) {
@@ -115,13 +140,14 @@
     }
 
     h1 {
-      color: black;
+      color: var(--text-color);
       font-size: 2rem;
       margin-top: 1rem;
       margin-bottom: 2rem;
       max-width: 400px;
       font-family: 'Ubuntu', sans-serif;
       text-align: center;
+      transition: color 0.3s ease;
     }
 
     .title-special {
@@ -131,7 +157,8 @@
     }
 
     #integrated-terminal {
-      width: 400px;
+      width: 100%;
+      max-width: 400px;
       height: 580px;
       margin: 0 auto;
       margin-bottom: 0;
@@ -165,9 +192,10 @@
       text-align: center;
       font-size: 1rem;
       max-width: 400px;
-      color: #333;
+      color: var(--secondary-text-color);
       padding: 5px 10px;
       border-radius: 5px;
+      transition: color 0.3s ease;
     }
     
     .community-message a {
@@ -194,7 +222,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background-color: #F2A900;
+      background-color: var(--social-bg-color);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -203,7 +231,7 @@
     
     .social-icon:hover {
       transform: scale(1.1);
-      background-color: #FFB733;
+      background-color: var(--social-hover-color);
     }
     
     .social-icon img {
@@ -216,25 +244,97 @@
       margin-top: 20px;
       padding: 10px;
       font-size: 0.9rem;
-      color: #777;
+      color: var(--footer-text-color);
       text-align: center;
       width: 100%;
       position: absolute;
       bottom: 10px;
       left: 0;
+      transition: color 0.3s ease;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      background-color: #F2A900;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1);
+    }
+
+    .theme-toggle img {
+      width: 24px;
+      height: 24px;
+      filter: invert(1);
+    }
+
+    /* Loading indicator styles */
+    .loading-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 50;
+      border-radius: 12px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(242, 169, 0, 0.3);
+      border-radius: 50%;
+      border-top-color: #F2A900;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Hide loading spinner when terminal is ready */
+    .jupiter-ready .loading-container {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <a href="https://thenextbitcoin.fun" target="_blank">
-      <img src="https://ipfs.io/ipfs/bafkreic4h3qlk5ezs2ajufdtfvpaqcm7ogabsj4kbghthosc6bw6s3kwry" alt="ButtDex Logo" class="logo">
+      <img src="https://ipfs.io/ipfs/bafkreic4h3qlk5ezs2ajufdtfvpaqcm7ogabsj4kbghthosc6bw6s3kwry" alt="ButtDex Logo" class="logo" id="site-logo">
     </a>
   </div>
   
+  <!-- Theme toggle button -->
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+    <img src="https://cdn-icons-png.flaticon.com/512/702/702471.png" alt="Theme" id="theme-icon">
+  </button>
+  
   <div class="main-content">
     <h1 class="title-special">Welcome to the ButtDex</h1>
-    <div id="integrated-terminal"></div>
+    <div id="terminal-wrapper" style="position: relative; width: 100%; max-width: 400px;">
+      <div id="integrated-terminal"></div>
+      <div class="loading-container" id="terminal-loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
     <div id="error-container" class="error-message" style="display: none;"></div>
     <div class="community-message">
       Buttcoin is the next Bitcoin: swap on ButtDex to help <a href="https://t.me/buttcointnbsol" target="_blank">the community</a> grow!
@@ -261,20 +361,73 @@
   </div>
 
   <script>
+    // Theme switcher functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const themeToggle = document.getElementById('theme-toggle');
+      const themeIcon = document.getElementById('theme-icon');
+      const siteLogo = document.getElementById('site-logo');
+      const logoLight = 'https://ipfs.io/ipfs/bafkreic4h3qlk5ezs2ajufdtfvpaqcm7ogabsj4kbghthosc6bw6s3kwry';
+      const logoDark = 'butt-banner-light.png'; // Path to light version of logo
+      
+      // Check for saved user preference, otherwise use system preference
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeIcon.src = 'https://cdn-icons-png.flaticon.com/512/3073/3073665.png'; // moon icon
+        siteLogo.src = logoDark;
+      }
+      
+      themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+          themeIcon.src = 'https://cdn-icons-png.flaticon.com/512/702/702471.png'; // sun icon
+          siteLogo.src = logoLight;
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+          themeIcon.src = 'https://cdn-icons-png.flaticon.com/512/3073/3073665.png'; // moon icon
+          siteLogo.src = logoDark;
+        }
+      });
+    });
+
+    // Main Jupiter Terminal initialization
     window.addEventListener('DOMContentLoaded', () => {
       const errorContainer = document.getElementById('error-container');
+      const terminalWrapper = document.getElementById('terminal-wrapper');
+      const loadingElement = document.getElementById('terminal-loading');
       
-      // List of fallback RPC endpoints to try
-      const rpcEndpoints = [
-        "https://tame-wispy-sunset.solana-mainnet.quiknode.pro/6004706cdd1ee3b1c97ba63416f622fd874d02d8/", // Your original QuickNode endpoint
-        "https://mainnet.helius-rpc.com/?api-key=15319960-0e10-4e0c-a412-4fe102184328", // Helius demo RPC
-        "https://api.mainnet-beta.solana.com", // Solana's public RPC (often rate limited)
-        "https://rpc.ankr.com/solana", // Ankr's public RPC
-      ];
+      // Securely get RPC endpoints without exposing API keys
+      function getSecureRpcEndpoints() {
+        // In production, this would call your backend API
+        // For now, we return public endpoints that don't expose keys
+        return [
+          "https://api.mainnet-beta.solana.com", // Public RPC (as fallback)
+          "https://rpc.ankr.com/solana" // Public RPC without keys
+        ];
+      }
+      
+      // Get secure endpoints
+      const rpcEndpoints = getSecureRpcEndpoints();
       
       // Start the initialization process
       let currentEndpointIndex = 0;
-      initJupiterWithEndpoint(rpcEndpoints[currentEndpointIndex]);
+      
+      // Function to check if Jupiter is available
+      function waitForJupiter() {
+        if (window.Jupiter && typeof window.Jupiter.init === 'function') {
+          initJupiterWithEndpoint(rpcEndpoints[currentEndpointIndex]);
+        } else {
+          setTimeout(waitForJupiter, 200);
+        }
+      }
+      
+      // Start checking for Jupiter
+      waitForJupiter();
       
       // Function to handle errors and try next endpoint
       function initJupiterWithEndpoint(currentEndpoint) {
@@ -284,6 +437,7 @@
           // Check if there's an existing instance and resume it
           if (window.Jupiter._instance) {
             window.Jupiter.resume();
+            terminalWrapper.classList.add('jupiter-ready');
           } else {
             window.Jupiter.init({
               displayMode: "integrated",
@@ -313,8 +467,8 @@
               containerStyles: { 
                 width: "100%",
                 borderRadius: "20px",
-                boxShadow: "0 0 20px rgba(242, 169, 0, 0)",
-                backgroundColor: "#F2A900", // Adding explicit dark background color
+                boxShadow: `0 0 20px var(--shadow-color)`,
+                backgroundColor: "var(--terminal-bg-color)",
                 padding: "0",
                 margin: "0",
                 marginBottom: "0"
@@ -345,6 +499,12 @@
                 }
               }
             });
+
+            // Handle terminal ready state
+            // Give Jupiter a moment to initialize the UI
+            setTimeout(() => {
+              terminalWrapper.classList.add('jupiter-ready');
+            }, 1500);
           }
         } catch (error) {
           console.error("Jupiter initialization error:", error);
@@ -366,9 +526,21 @@
   <!-- Mobile Phantom wallet redirect helper -->
   <script>
     // This script helps redirect mobile users directly to Phantom app when connecting a wallet
-    window.addEventListener('DOMContentLoaded', () => {
-      // Wait for Jupiter Terminal to initialize
-      setTimeout(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      // Create a function to check if Jupiter Terminal is ready
+      function checkJupiterReady() {
+        if (window.Jupiter && window.Jupiter.init) {
+          initPhantomRedirectHelper();
+        } else {
+          // If not ready yet, check again soon
+          setTimeout(checkJupiterReady, 500);
+        }
+      }
+      
+      // Start checking
+      checkJupiterReady();
+      
+      function initPhantomRedirectHelper() {
         // Function to check if user is on mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
@@ -428,7 +600,7 @@
             }
           }
         }
-      }, 3000);
+      }
     });
   </script>
 </body>

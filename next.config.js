@@ -39,7 +39,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://terminal.jup.ag https://*.jup.ag; style-src 'self' 'unsafe-inline' https://terminal.jup.ag https://*.jup.ag; img-src 'self' data: https: http:; connect-src 'self' https: wss:; font-src 'self' data:; frame-src 'self' https://terminal.jup.ag https://*.jup.ag"
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://terminal.jup.ag https://*.jup.ag; style-src 'self' 'unsafe-inline' https://terminal.jup.ag https://*.jup.ag https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: http:; connect-src 'self' https: wss:; frame-src 'self' https://terminal.jup.ag https://*.jup.ag;"
           },
           {
             key: 'X-Content-Type-Options',

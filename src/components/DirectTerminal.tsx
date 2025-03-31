@@ -97,8 +97,8 @@ export default function DirectTerminal() {
         // Use auto for wallet connection to avoid context conflicts
         walletConnectionStrategy: 'auto',
         // Ensure wallet features are accessible
-        enableWalletPassthrough: true,
-        passThoughWalletTokenAccounts: true,
+        enableWalletPassthrough: false,
+        passThoughWalletTokenAccounts: false,
         containerStyles: {
           width: '100%',
           height: '100%',

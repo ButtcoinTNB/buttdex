@@ -1,21 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
   images: {
     unoptimized: true,
     domains: ['terminal.jup.ag', 'ipfs.io'],
+    formats: ['image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'cdn-icons-png.flaticon.com',
-        port: '',
         pathname: '/512/**',
       },
       {
         protocol: 'https',
         hostname: 'ipfs.io',
-        port: '',
         pathname: '/ipfs/**',
       },
     ],
@@ -31,9 +31,7 @@ const nextConfig = {
     };
     return config;
   },
-  // Ensure static assets are copied
-  assetPrefix: process.env.NODE_ENV === 'production' ? '' : undefined,
-  // Allow loading from terminal.jup.ag
+  // Configure security headers 
   async headers() {
     return [
       {
@@ -42,6 +40,10 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://terminal.jup.ag; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; connect-src 'self' https: wss:; font-src 'self' data:;"
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
           }
         ]
       }

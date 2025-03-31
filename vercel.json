@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "zeroConfig": true
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/icons/(.*)",
+      "dest": "/public/icons/$1",
+      "headers": {
+        "cache-control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/(.*\\.(js|json|css|svg|png|ico|jpg|jpeg))",
+      "dest": "/$1",
+      "headers": {
+        "cache-control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1",
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "x-xss-protection": "1; mode=block"
+      }
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SITE_URL": "https://buttdex.com"
+  },
+  "projectSettings": {
+    "rootDirectory": "."
+  }
+} 

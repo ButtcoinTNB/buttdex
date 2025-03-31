@@ -17,27 +17,31 @@ export const WalletProvider: FC<Props> = ({ children }) => {
   // You can also provide a custom RPC endpoint
   const endpoint = useMemo(() => process.env.NEXT_PUBLIC_RPC_ENDPOINT || 'https://api.mainnet-beta.solana.com', []);
 
-  // Only initialize wallet adapters on the client
+  // Initialize wallet adapters with appropriate configuration
   const wallets = useMemo(() => {
     // We're in the server environment during SSR
     if (typeof window === 'undefined') return [];
     
-    // On the client, check if we're on mobile
+    // Always include PhantomWalletAdapter, but configure differently based on device
     const deviceInfo = detectDevice();
+    
     if (deviceInfo.isMobile) {
       console.log('Mobile device detected: initializing wallet adapters');
       return [new PhantomWalletAdapter()];
     } else {
-      console.log('Desktop device detected: skipping wallet adapter initialization');
-      // Return an empty array to avoid conflicts with Jupiter Terminal
-      // This lets Jupiter Terminal handle wallet connections on desktop
-      return [];
+      console.log('Desktop device detected: providing passive wallet adapter');
+      // Return PhantomWalletAdapter but don't autoConnect - let Jupiter Terminal handle it
+      return [new PhantomWalletAdapter()];
     }
   }, []);
 
+  // autoConnect only on mobile to avoid conflicts with Jupiter Terminal on desktop
+  const deviceInfo = typeof window !== 'undefined' ? detectDevice() : { isMobile: false };
+  const shouldAutoConnect = deviceInfo.isMobile;
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <SolanaWalletProvider wallets={wallets} autoConnect>
+      <SolanaWalletProvider wallets={wallets} autoConnect={shouldAutoConnect}>
         <WalletModalProvider>
           {children}
         </WalletModalProvider>

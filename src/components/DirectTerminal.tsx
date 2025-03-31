@@ -124,7 +124,7 @@ export default function DirectTerminal() {
     } catch (err) {
       console.error('Failed to initialize Jupiter Terminal:', err);
     }
-  }, [isLoaded]);
+  }, [isLoaded, deviceInfo.isMobile, terminalId]);
 
   return (
     <div id={terminalId} className="w-full h-full min-h-[580px]"></div>

@@ -8,6 +8,8 @@ import { detectDevice } from '@/utils/device-detection';
 declare global {
   interface Window {
     Jupiter: JupiterTerminalType;
+    solana?: any;
+    phantom?: any;
   }
 }
 
@@ -61,6 +63,17 @@ export default function DirectTerminal() {
     return () => clearInterval(checkJupiterLoaded);
   }, []);
 
+  // Fix Phantom wallet detection on desktop
+  useEffect(() => {
+    if (typeof window === 'undefined' || deviceInfo.isMobile) return;
+    
+    // Only apply this fix on desktop
+    if (window.solana && !window.phantom) {
+      console.log('Setting phantom reference on window for better detection');
+      window.phantom = window.solana;
+    }
+  }, [deviceInfo.isMobile]);
+  
   // Initialize Jupiter when loaded
   useEffect(() => {
     if (!isLoaded || typeof window === 'undefined') return;
@@ -80,6 +93,8 @@ export default function DirectTerminal() {
         defaultExplorer: 'Solana Explorer',
         strictTokenList: true,
         walletConnectionStrategy: deviceInfo.isMobile ? 'custom' : 'auto',
+        enableWalletPassthrough: true,
+        passThoughWalletTokenAccounts: true,
         containerStyles: {
           width: '100%',
           height: '100%',

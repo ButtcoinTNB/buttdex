@@ -8,6 +8,8 @@ interface JupiterTerminalOptions {
   appearance?: "dark" | "light";
   defaultExplorer?: "Solana Explorer" | "Solscan" | "Solana Beach" | "SolanaFM";
   walletConnectionStrategy?: "auto" | "custom";
+  enableWalletPassthrough?: boolean;
+  passThoughWalletTokenAccounts?: boolean;
   formProps?: {
     fixedInputMint?: boolean;
     fixedOutputMint?: boolean;

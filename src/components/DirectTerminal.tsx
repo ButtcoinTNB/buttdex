@@ -94,9 +94,8 @@ export default function DirectTerminal() {
         appearance: 'dark',
         defaultExplorer: 'Solana Explorer',
         strictTokenList: true,
-        // Tell Jupiter to use our existing wallet adapter
-        // instead of initializing its own
-        walletConnectionStrategy: 'inherit',
+        // Use auto for wallet connection to avoid context conflicts
+        walletConnectionStrategy: 'auto',
         // Ensure wallet features are accessible
         enableWalletPassthrough: true,
         passThoughWalletTokenAccounts: true,

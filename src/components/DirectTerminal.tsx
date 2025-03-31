@@ -22,15 +22,23 @@ export default function DirectTerminal() {
   const terminalId = 'integrated-terminal';
   const deviceInfo = detectDevice();
   
-  // Initialize Phantom deeplink handler for mobile
+  // Initialize Phantom deeplink handler for mobile only
   useEffect(() => {
     // Only run on client-side
     if (typeof window === 'undefined') return;
     
-    // Initialize the deeplink handler for mobile devices
-    // This will intercept Jupiter Terminal's wallet connect button clicks
-    initPhantomDeeplinkHandler();
-  }, []);
+    // Only initialize the deeplink handler on mobile devices
+    if (deviceInfo.isMobile) {
+      try {
+        initPhantomDeeplinkHandler();
+        console.log('Phantom deeplink handler initialized for mobile');
+      } catch (err) {
+        console.log('Phantom deeplink handler failed to initialize');
+      }
+    } else {
+      console.log('Skipping Phantom deeplink handler on desktop');
+    }
+  }, [deviceInfo.isMobile]);
   
   // More efficient Jupiter script loading detection
   useEffect(() => {
@@ -71,6 +79,7 @@ export default function DirectTerminal() {
         appearance: 'dark',
         defaultExplorer: 'Solana Explorer',
         strictTokenList: true,
+        walletConnectionStrategy: deviceInfo.isMobile ? 'custom' : 'auto',
         containerStyles: {
           width: '100%',
           height: '100%',

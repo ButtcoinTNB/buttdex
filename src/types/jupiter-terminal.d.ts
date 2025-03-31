@@ -7,6 +7,7 @@ interface JupiterTerminalOptions {
   strictTokenList?: boolean;
   appearance?: "dark" | "light";
   defaultExplorer?: "Solana Explorer" | "Solscan" | "Solana Beach" | "SolanaFM";
+  walletConnectionStrategy?: "auto" | "custom";
   formProps?: {
     fixedInputMint?: boolean;
     fixedOutputMint?: boolean;

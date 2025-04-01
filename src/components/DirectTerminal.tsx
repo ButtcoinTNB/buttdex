@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { JupiterTerminal as JupiterTerminalType } from '@/types/jupiter-terminal';
 import { initPhantomDeeplinkHandler } from '@/utils/phantom/jupiter-deeplink-handler';
 import { detectDevice } from '@/utils/device-detection';
+import { launchButtcoinConfetti } from '@/utils/confetti';
 
 declare global {
   interface Window {
@@ -53,9 +54,7 @@ export default function DirectTerminal() {
     // Create a style element for any immediate styling
     const style = document.createElement('style');
     style.textContent = `
-      /* Hide the token program message - baseline CSS */
-      #jupiter-terminal > div > div.flex.flex-col.justify-center.items-center > div > div.space-y-4.border.border-white\\/5.rounded-xl.p-3.bg-v3-input-background.border-none.mt-0 > div.flex.items-start.justify-between.text-xs > div.flex.w-\\[50\\%\\].text-white\\/50 > div > div,
-      #jupiter-terminal div:has(> span:contains("token program")),
+      /* More selective CSS to only hide token program messages */
       #jupiter-terminal div:has(> p:contains("token program")) {
         display: none !important;
       }
@@ -71,17 +70,12 @@ export default function DirectTerminal() {
       const hasTokenProgramText = (element: Element): boolean => {
         if (!element) return false;
         
-        // Check the element's text content
+        // Check the element's text content - be more specific
         const text = element.textContent?.toLowerCase() || '';
-        if (text.includes('token program') && text.includes('execute the trade')) {
+        if (text.includes('token program') && 
+            text.includes('execute the trade') && 
+            text.length < 200) { // Only match shorter messages to avoid hiding larger UI sections
           return true;
-        }
-        
-        // Check child elements recursively
-        for (const child of Array.from(element.children)) {
-          if (hasTokenProgramText(child)) {
-            return true;
-          }
         }
         
         return false;
@@ -95,8 +89,8 @@ export default function DirectTerminal() {
         console.debug('Token program message hidden by observer');
       }
       
-      // Process child nodes
-      (node as Element).querySelectorAll('*').forEach((child: Element) => {
+      // Process child nodes - only direct children to be more selective
+      Array.from((node as Element).children || []).forEach((child: Element) => {
         if (hasTokenProgramText(child)) {
           (child as HTMLElement).style.display = 'none';
           child.setAttribute('data-hidden-by-observer', 'true');
@@ -281,6 +275,12 @@ export default function DirectTerminal() {
         }],
         onSuccess: ({ txid }) => {
           console.log('Swap successful!', txid);
+          // Launch buttcoin confetti celebration
+          launchButtcoinConfetti({
+            particleCount: 100,
+            spread: 90,
+            startVelocity: 40,
+          });
         },
         onSwapError: ({ error }) => {
           console.error('Swap error:', error);

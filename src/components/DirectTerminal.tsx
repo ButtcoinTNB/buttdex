@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import type { JupiterTerminal as JupiterTerminalType } from '@/types/jupiter-terminal';
 import { initPhantomDeeplinkHandler } from '@/utils/phantom/jupiter-deeplink-handler';
 import { detectDevice } from '@/utils/device-detection';
-import { launchButtcoinConfetti } from '@/utils/confetti';
 
 declare global {
   interface Window {
@@ -275,12 +274,11 @@ export default function DirectTerminal() {
         }],
         onSuccess: ({ txid }) => {
           console.log('Swap successful!', txid);
-          // Launch buttcoin confetti celebration
-          launchButtcoinConfetti({
-            particleCount: 100,
-            spread: 90,
-            startVelocity: 40,
+          // Dispatch custom event for the parent page to handle
+          const successEvent = new CustomEvent('jupiterSwapSuccess', { 
+            detail: { txid } 
           });
+          window.dispatchEvent(successEvent);
         },
         onSwapError: ({ error }) => {
           console.error('Swap error:', error);

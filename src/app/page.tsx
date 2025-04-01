@@ -1,12 +1,43 @@
 'use client';
 
 import Script from 'next/script';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import DirectTerminal from '@/components/DirectTerminal';
 import ThemeToggle from '@/components/ThemeToggle';
 import ThemeLogo from '@/components/ThemeLogo';
+import { launchButtcoinConfetti } from '@/utils/confetti';
+import ConfettiTester from '@/components/ConfettiTester';
 
 export default function Home() {
+  // Listen for swap success events
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleSwapSuccess = (event: Event) => {
+      const customEvent = event as CustomEvent<{ txid: string }>;
+      console.log('Swap success event received:', customEvent.detail.txid);
+      
+      // Launch buttcoin confetti celebration
+      launchButtcoinConfetti({
+        particleCount: 100,
+        spread: 90,
+        startVelocity: 40,
+      });
+    };
+    
+    // Add event listener
+    window.addEventListener('jupiterSwapSuccess', handleSwapSuccess);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('jupiterSwapSuccess', handleSwapSuccess);
+    };
+  }, []);
+  
+  // Check if we're in development mode
+  const isDev = process.env.NODE_ENV === 'development';
+  
   return (
     <>
       <Script 
@@ -52,6 +83,9 @@ export default function Home() {
           </a>
         </div>
       </div>
+      
+      {/* Only show test button in development */}
+      {isDev && <ConfettiTester />}
 
       <div className="footer">
         2025, Buttcoin - The Next Bitcoin

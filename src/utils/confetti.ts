@@ -25,37 +25,41 @@ export const launchButtcoinConfetti = (options: ConfettiOptions = {}) => {
 
     const mergedOptions = { ...defaults, ...options };
 
-    // Create a Buttcoin image shape
-    const buttcoin = new Image();
-    buttcoin.src = '/buttcoin-shiny.png';
-    
-    // Wait for the image to load
-    buttcoin.onload = () => {
-      // Create a temporary canvas to generate a particle shape
-      const canvas = document.createElement('canvas');
-      const size = 24; // Size of each particle
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) return;
-      
-      // Draw a scaled-down version of the Buttcoin
-      ctx.drawImage(buttcoin, 0, 0, size, size);
-      
-      // Create the shape
-      const shape = confetti.shapeFromPath({
-        path: canvas.toDataURL(),
+    try {
+      // Configure confetti to NOT use web workers
+      const myConfetti = confetti.create(undefined, {
+        resize: true,
+        useWorker: false, // Disable Web Worker to avoid CSP issues
       });
       
-      // Launch the confetti with the Buttcoin shape
-      confetti({
+      // Simple approach without custom shapes
+      myConfetti({
         ...mergedOptions,
-        shapes: [shape],
         colors: ['#FFD700', '#FFA500', '#FF8C00'], // Golden colors to match Buttcoin
         origin: { x: 0.5, y: 0.7 }, // Start from bottom center
       });
-    };
+      
+      // Add a delayed second burst for extra effect
+      setTimeout(() => {
+        myConfetti({
+          ...mergedOptions,
+          particleCount: Math.floor(mergedOptions.particleCount / 2),
+          origin: { x: 0.4, y: 0.7 },
+        });
+      }, 250);
+      
+      // Add a third burst for a fuller effect
+      setTimeout(() => {
+        myConfetti({
+          ...mergedOptions,
+          particleCount: Math.floor(mergedOptions.particleCount / 2),
+          origin: { x: 0.6, y: 0.7 },
+        });
+      }, 400);
+      
+    } catch (error) {
+      console.error('Failed to create confetti:', error);
+    }
   }).catch(error => {
     console.error('Failed to load confetti library:', error);
   });

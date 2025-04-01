@@ -3,6 +3,7 @@ type DeviceInfo = {
   isIOS: boolean;
   isAndroid: boolean;
   isBrowser: boolean;
+  isPhantomBrowser: boolean;
   supportsDeeplinks: boolean;
 };
 
@@ -14,31 +15,35 @@ export function detectDevice(): DeviceInfo {
       isIOS: false,
       isAndroid: false,
       isBrowser: false,
+      isPhantomBrowser: false,
       supportsDeeplinks: false
     };
   }
 
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const userAgent = navigator.userAgent.toLowerCase();
   
-  // iOS detection
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+  // iOS detection - more precise check
+  const isIOS = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
   
-  // Android detection
-  const isAndroid = /Android/.test(userAgent);
+  // Android detection - more precise check
+  const isAndroid = /android/.test(userAgent);
   
-  // General mobile detection (includes tablets)
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent) ||
-    (!!navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
+  // General mobile detection (excludes tablets for better UX)
+  const isMobile = /iphone|ipod|android.*mobile|windows.*phone|blackberry.*mobile/i.test(userAgent);
 
-  // Support for deeplinks is assumed on mobile devices
-  // In a more robust implementation, we might test this capability
-  const supportsDeeplinks = isMobile;
+  // Detect if we're in the Phantom browser
+  const isPhantomBrowser = window.location.href.startsWith('https://phantom.app/ul/browse') || 
+                          userAgent.includes('phantom');
+
+  // Support for deeplinks on mobile devices not in Phantom
+  const supportsDeeplinks = isMobile && !isPhantomBrowser;
   
   return {
     isMobile,
     isIOS,
     isAndroid,
     isBrowser: true,
+    isPhantomBrowser,
     supportsDeeplinks
   };
 } 

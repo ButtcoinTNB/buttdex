@@ -1,46 +1,52 @@
 'use client';
 
-import { generateDappKeyPair } from './encryption';
-import { createConnectURL } from './deeplink';
 import { detectDevice } from '../device-detection';
-import { saveSession, getSession } from './session';
 
 /**
  * This utility handles Phantom deeplinks for the Jupiter Terminal
  * It detects when the connect wallet button is clicked in the terminal
- * and redirects to Phantom app on mobile
+ * and redirects to Phantom browser on mobile
  */
 
 // Initialize state
-let dappKeyPair = generateDappKeyPair();
 let isInitialized = false;
 
 // Class name of Jupiter's connect wallet button
 const JUPITER_WALLET_BUTTON_SELECTOR = 'button[data-testid="connect-wallet-button"]';
 
+// Base URL for Phantom browser
+const PHANTOM_BROWSER_URL = 'https://phantom.app/ul/browse';
+
+// Storage key for redirect state
+const REDIRECT_STATE_KEY = 'phantomRedirectState';
+
 export function initPhantomDeeplinkHandler() {
   if (typeof window === 'undefined' || isInitialized) return;
   
   const deviceInfo = detectDevice();
-  isInitialized = true;
   
   // Only apply on mobile devices
-  if (!deviceInfo.isMobile) return;
+  if (!deviceInfo.isMobile || deviceInfo.isPhantomBrowser) {
+    isInitialized = true;
+    return;
+  }
   
-  console.log('Initializing Phantom deeplink handler for mobile devices');
+  console.log('Initializing Phantom deeplink handler for mobile');
   
-  // We need to intercept Jupiter's wallet connection flow
-  // by watching for the connect wallet button click
-  const observer = new MutationObserver((mutations) => {
-    // Check if Jupiter Terminal is loaded and the connect button exists
+  // Create a MutationObserver to watch for the connect button
+  const observer = new MutationObserver((mutations, obs) => {
     const connectButton = document.querySelector(JUPITER_WALLET_BUTTON_SELECTOR) as HTMLButtonElement | null;
     
     if (connectButton) {
       // Remove any previous listeners to avoid duplicates
       connectButton.removeEventListener('click', handleConnectClick);
       
-      // Add a listener that will intercept the click
-      connectButton.addEventListener('click', handleConnectClick);
+      // Add our interceptor
+      connectButton.addEventListener('click', handleConnectClick, { capture: true });
+      
+      // Stop observing once we've found and modified the button
+      obs.disconnect();
+      isInitialized = true;
     }
   });
   
@@ -49,34 +55,51 @@ export function initPhantomDeeplinkHandler() {
     childList: true, 
     subtree: true 
   });
-  
-  // Check for incoming parameters from Phantom redirect
-  processDeeplinkResponse();
+
+  // Clean up function
+  return () => {
+    observer.disconnect();
+    const connectButton = document.querySelector(JUPITER_WALLET_BUTTON_SELECTOR) as HTMLButtonElement | null;
+    if (connectButton) {
+      connectButton.removeEventListener('click', handleConnectClick);
+    }
+  };
 }
 
 // Handle connect button click
 function handleConnectClick(event: MouseEvent) {
   const deviceInfo = detectDevice();
   
-  // Only intercept on mobile
-  if (!deviceInfo.isMobile) return;
+  // Only intercept on mobile devices not in Phantom
+  if (!deviceInfo.supportsDeeplinks) return;
   
   // Stop the original click event
   event.preventDefault();
   event.stopPropagation();
   
-  // Create the redirect URL (current page)
-  const redirectUrl = window.location.href;
+  // Get the current URL without any query parameters
+  const currentUrl = window.location.origin + window.location.pathname;
   
-  // Generate the Phantom deeplink
-  const phantomUrl = createConnectURL(
-    dappKeyPair.publicKey,
-    redirectUrl
-  );
+  // Create the Phantom browser URL
+  const phantomUrl = `${PHANTOM_BROWSER_URL}/${encodeURIComponent(currentUrl)}`;
   
-  // Redirect to Phantom app
-  console.log('Redirecting to Phantom app');
-  window.location.href = phantomUrl;
+  // Save current state before redirect
+  const currentState = {
+    timestamp: Date.now(),
+    returnUrl: currentUrl
+  };
+  
+  try {
+    sessionStorage.setItem(REDIRECT_STATE_KEY, JSON.stringify(currentState));
+    
+    // Redirect to Phantom browser
+    console.log('Redirecting to Phantom browser:', phantomUrl);
+    window.location.href = phantomUrl;
+  } catch (error) {
+    console.error('Failed to save redirect state:', error);
+    // Still try to redirect even if we can't save state
+    window.location.href = phantomUrl;
+  }
 }
 
 // Process incoming deeplink response from Phantom
@@ -84,21 +107,23 @@ function processDeeplinkResponse() {
   if (typeof window === 'undefined') return;
   
   try {
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
-    
-    // Check if we've received a Phantom response
-    if (params.has('phantom_encryption_public_key') && params.has('data') && params.has('nonce')) {
-      console.log('Detected Phantom deeplink response, processing...');
+    // Check if we're returning from Phantom
+    const savedState = sessionStorage.getItem(REDIRECT_STATE_KEY);
+    if (savedState) {
+      const state = JSON.parse(savedState);
       
-      // The actual processing is handled by the PhantomConnection hook
-      // This is just a placeholder - the connection should be handled separately
-      // and the WalletAdapter will be updated automatically
+      // Clear the saved state
+      sessionStorage.removeItem(REDIRECT_STATE_KEY);
       
-      // Clean URL parameters to avoid processing again on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // If this is a fresh return (within last 5 minutes)
+      if (Date.now() - state.timestamp < 300000) {
+        console.log('Returned from Phantom browser');
+        
+        // Let Jupiter Terminal handle the connection
+        // The WalletAdapter will detect Phantom automatically
+      }
     }
   } catch (error) {
-    console.error('Failed to process deeplink response:', error);
+    console.error('Failed to process return from Phantom:', error);
   }
 } 

@@ -1,4 +1,5 @@
 import { PublicKey, Transaction } from '@solana/web3.js';
+import type { WalletContextState } from '@solana/wallet-adapter-react';
 
 interface JupiterTerminalOptions {
   displayMode: "modal" | "integrated";
@@ -48,7 +49,7 @@ export interface JupiterTerminal {
   init: (options: JupiterTerminalOptions) => void;
   resume: () => void;
   close: () => void;
-  syncProps?: (props: any) => void;
+  syncProps: (props: { passthroughWalletContextState: WalletContextState }) => void;
   _instance?: any;
 }
 

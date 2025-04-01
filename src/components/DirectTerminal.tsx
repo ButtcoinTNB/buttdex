@@ -11,6 +11,10 @@ declare global {
     solana?: any;
     phantom?: any;
   }
+  
+  interface Navigator {
+    wallets?: any[];
+  }
 }
 
 const FALLBACK_RPC = "https://api.mainnet-beta.solana.com";
@@ -42,6 +46,39 @@ export default function DirectTerminal() {
     }
   }, [deviceInfo.isMobile]);
   
+  // Hide token program message using CSS
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Create a style element
+    const style = document.createElement('style');
+    
+    // Add CSS using the selector provided
+    style.textContent = `
+      /* Hide the token program message */
+      #jupiter-terminal > div > div:nth-child(2) > div > div.flex.items-start.justify-between.text-xs > div.flex.w-\\[50\\%\\].text-white\\/50 > div > div > div > ul > li > p > span,
+      #jupiter-terminal div:has(span:contains("token program")) {
+        opacity: 0 !important;
+        visibility: hidden !important;
+      }
+      
+      /* Hide parent containers when they only contain the token program message */
+      #jupiter-terminal div:has(> span:contains("token program")) {
+        display: none !important;
+      }
+    `;
+    
+    // Add the style to the document
+    document.head.appendChild(style);
+    
+    // Clean up on unmount
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+  }, []);
+  
   // More efficient Jupiter script loading detection
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -65,14 +102,30 @@ export default function DirectTerminal() {
 
   // Fix Phantom wallet detection on desktop
   useEffect(() => {
-    if (typeof window === 'undefined' || deviceInfo.isMobile) return;
+    if (typeof window === 'undefined') return;
     
-    // Only apply this fix on desktop
-    if (window.solana && !window.phantom) {
-      console.log('Setting phantom reference on window for better detection');
-      window.phantom = window.solana;
-    }
-  }, [deviceInfo.isMobile]);
+    // Ensure proper wallet detection initialization
+    const initializeWalletDetection = () => {
+      try {
+        // Initialize empty wallets array if it doesn't exist
+        if (!window.navigator.wallets) {
+          Object.defineProperty(window.navigator, 'wallets', {
+            value: [],
+            writable: true
+          });
+        }
+        
+        // Set Phantom reference if available
+        if (window.solana && !window.phantom) {
+          window.phantom = window.solana;
+        }
+      } catch (error) {
+        console.warn('Wallet detection initialization failed:', error);
+      }
+    };
+
+    initializeWalletDetection();
+  }, []);
   
   // Initialize Jupiter when loaded
   useEffect(() => {

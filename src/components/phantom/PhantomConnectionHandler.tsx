@@ -69,6 +69,13 @@ export function PhantomConnectionHandler() {
     }
   }, [wallet]);
   
+  // Only handle connection if Jupiter Terminal isn't managing it
+  useEffect(() => {
+    if (!window.Jupiter && wallet.wallet && !wallet.connected) {
+      wallet.connect().catch(console.error);
+    }
+  }, [wallet]);
+  
   // Don't render anything - this is just processing
   return null;
 } 

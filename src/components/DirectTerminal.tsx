@@ -99,6 +99,10 @@ export default function DirectTerminal() {
         // Ensure wallet features are accessible
         enableWalletPassthrough: false,
         passThoughWalletTokenAccounts: false,
+        // Add explicit token program config
+        tokenProgramVersion: 'token-2022',
+        // Ensure clean wallet context
+        containerClassName: 'jupiter-terminal-container',
         containerStyles: {
           width: '100%',
           height: '100%',
@@ -106,7 +110,6 @@ export default function DirectTerminal() {
           boxShadow: '0 0 20px var(--shadow-color)',
           backgroundColor: 'var(--terminal-bg-color)',
         },
-        containerClassName: 'jupiter-terminal-custom',
         formProps: {
           initialInputMint: 'So11111111111111111111111111111111111111112', // SOL
           initialOutputMint: 'FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump', // BUTTCOIN

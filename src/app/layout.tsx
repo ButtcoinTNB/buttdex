@@ -1,5 +1,6 @@
 import { WalletProvider } from '@/components/WalletProvider'
 import { ThemeProvider } from '@/components/theme-provider'
+import PhantomMobileRedirect from '@/components/PhantomMobileRedirect'
 import { Ubuntu } from 'next/font/google'
 import './globals.css'
 
@@ -58,7 +59,10 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="buttdex-theme"
         >
-          <WalletProvider>{children}</WalletProvider>
+          <WalletProvider>
+            {children}
+            <PhantomMobileRedirect />
+          </WalletProvider>
         </ThemeProvider>
       </body>
     </html>

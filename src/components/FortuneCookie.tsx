@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { getRandomFortune } from '@/data/fortunes';
 
 interface FortuneCookieProps {
@@ -45,8 +45,8 @@ export default function FortuneCookie({ visible, onClose }: FortuneCookieProps) 
     ctx.fillStyle = '#222';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Buttcoin logo
-    const logo = new Image();
+    // Draw Buttcoin logo - use window.Image to avoid conflict with next/image
+    const logo = new window.Image(); // Use window.Image to be explicit
     logo.onload = () => {
       ctx.drawImage(logo, canvas.width/2 - 50, 40, 100, 100);
       
@@ -112,7 +112,7 @@ export default function FortuneCookie({ visible, onClose }: FortuneCookieProps) 
       >
         <div className={`transition-all duration-700 transform ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}>
           <div className="cursor-pointer" onClick={handleClick}>
-            <Image 
+            <NextImage 
               src="/fortune-cookie-closed.png" 
               alt="Fortune Cookie" 
               width={200} 
@@ -125,7 +125,7 @@ export default function FortuneCookie({ visible, onClose }: FortuneCookieProps) 
 
         <div className={`absolute top-0 left-0 w-full p-8 transition-all duration-700 transform ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}>
           <div>
-            <Image 
+            <NextImage 
               src="/fortune-cookie-open.png" 
               alt="Open Fortune Cookie" 
               width={200} 

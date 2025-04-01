@@ -46,33 +46,120 @@ export default function DirectTerminal() {
     }
   }, [deviceInfo.isMobile]);
   
-  // Hide token program message using CSS
+  // Hide token program message using MutationObserver
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    // Create a style element
+    // Create a style element for any immediate styling
     const style = document.createElement('style');
-    
-    // Add CSS using the selector provided
     style.textContent = `
-      /* Hide the token program message */
-      #jupiter-terminal > div > div:nth-child(2) > div > div.flex.items-start.justify-between.text-xs > div.flex.w-\\[50\\%\\].text-white\\/50 > div > div > div > ul > li > p > span,
-      #jupiter-terminal div:has(span:contains("token program")) {
-        opacity: 0 !important;
-        visibility: hidden !important;
-      }
-      
-      /* Hide parent containers when they only contain the token program message */
-      #jupiter-terminal div:has(> span:contains("token program")) {
+      /* Hide the token program message - baseline CSS */
+      #jupiter-terminal > div > div.flex.flex-col.justify-center.items-center > div > div.space-y-4.border.border-white\\/5.rounded-xl.p-3.bg-v3-input-background.border-none.mt-0 > div.flex.items-start.justify-between.text-xs > div.flex.w-\\[50\\%\\].text-white\\/50 > div > div,
+      #jupiter-terminal div:has(> span:contains("token program")),
+      #jupiter-terminal div:has(> p:contains("token program")) {
         display: none !important;
       }
     `;
-    
-    // Add the style to the document
     document.head.appendChild(style);
     
-    // Clean up on unmount
+    // Function to hide token program messages
+    const hideTokenProgramMessage = (node: Node) => {
+      // Skip non-element nodes
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      
+      // Check if this element or its children contain the token program message
+      const hasTokenProgramText = (element: Element): boolean => {
+        if (!element) return false;
+        
+        // Check the element's text content
+        const text = element.textContent?.toLowerCase() || '';
+        if (text.includes('token program') && text.includes('execute the trade')) {
+          return true;
+        }
+        
+        // Check child elements recursively
+        for (const child of Array.from(element.children)) {
+          if (hasTokenProgramText(child)) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+      
+      // Hide the element if it contains the token program message
+      if (hasTokenProgramText(node as Element)) {
+        // Use inline style for immediate effect
+        (node as HTMLElement).style.display = 'none';
+        (node as Element).setAttribute('data-hidden-by-observer', 'true');
+        console.debug('Token program message hidden by observer');
+      }
+      
+      // Process child nodes
+      (node as Element).querySelectorAll('*').forEach((child: Element) => {
+        if (hasTokenProgramText(child)) {
+          (child as HTMLElement).style.display = 'none';
+          child.setAttribute('data-hidden-by-observer', 'true');
+        }
+      });
+    };
+    
+    // Set up the observer
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        // Process added nodes
+        mutation.addedNodes.forEach(node => {
+          hideTokenProgramMessage(node);
+        });
+        
+        // Check if target element now contains token program message
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+          hideTokenProgramMessage(mutation.target);
+        }
+      });
+    });
+    
+    // Start observing once Jupiter Terminal is loaded
+    const startObserving = () => {
+      const terminalEl = document.getElementById('jupiter-terminal');
+      if (terminalEl) {
+        // Process already existing content
+        hideTokenProgramMessage(terminalEl);
+        
+        // Observe future changes
+        observer.observe(terminalEl, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+        
+        return true;
+      }
+      return false;
+    };
+    
+    // Try to start observing immediately
+    if (!startObserving()) {
+      // If not available yet, set up an interval to try again
+      const checkInterval = setInterval(() => {
+        if (startObserving()) {
+          clearInterval(checkInterval);
+        }
+      }, 500);
+      
+      // Clean up interval if component unmounts
+      return () => {
+        clearInterval(checkInterval);
+        observer.disconnect();
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      };
+    }
+    
+    // Clean up observer if component unmounts
     return () => {
+      observer.disconnect();
       if (document.head.contains(style)) {
         document.head.removeChild(style);
       }
@@ -104,6 +191,9 @@ export default function DirectTerminal() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
+    // Store original console.error
+    const originalConsoleError = window.console.error;
+    
     // Ensure proper wallet detection initialization
     const initializeWalletDetection = () => {
       try {
@@ -111,7 +201,8 @@ export default function DirectTerminal() {
         if (!window.navigator.wallets) {
           Object.defineProperty(window.navigator, 'wallets', {
             value: [],
-            writable: true
+            writable: true,
+            configurable: true
           });
         }
         
@@ -119,12 +210,33 @@ export default function DirectTerminal() {
         if (window.solana && !window.phantom) {
           window.phantom = window.solana;
         }
+        
+        // Override console.error to filter out specific errors
+        window.console.error = function(...args) {
+          // Filter out the specific error about wallets not being an array
+          if (args[0] && typeof args[0] === 'string' && args[0].includes('window.navigator.wallets is not an array')) {
+            return; // Don't log this specific error
+          }
+          
+          // Pass through all other errors to the original console.error
+          return originalConsoleError.apply(this, args);
+        };
       } catch (error) {
         console.warn('Wallet detection initialization failed:', error);
       }
     };
 
     initializeWalletDetection();
+    
+    // Clean up console.error override on unmount
+    return () => {
+      try {
+        // Restore original console.error
+        window.console.error = originalConsoleError;
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    };
   }, []);
   
   // Initialize Jupiter when loaded

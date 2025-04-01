@@ -133,7 +133,7 @@ export default function FortuneCookie({ visible, onClose }: FortuneCookieProps) 
               className="mx-auto" 
             />
             <div className="mt-6 p-4 bg-white/10 backdrop-blur-md rounded-lg">
-              <p className="text-white text-lg italic">"{fortune.message}"</p>
+              <p className="text-white text-lg italic">&ldquo;{fortune.message}&rdquo;</p>
             </div>
             
             <div className="mt-6 flex justify-center space-x-3">

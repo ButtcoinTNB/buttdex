@@ -33,7 +33,8 @@ export default function PhantomMobileRedirect() {
         e.stopPropagation();
         
         // Simple Phantom browse URL - no encryption or complex connection flow needed
-        const phantomBrowseUrl = `https://phantom.app/ul/browse/${encodeURIComponent('https://buttdex.com')}`;
+        const baseUrl = 'https://buttdex.com';
+        const phantomBrowseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(baseUrl)}?ref=${encodeURIComponent(baseUrl)}`;
         window.location.href = phantomBrowseUrl;
         return false;
       }

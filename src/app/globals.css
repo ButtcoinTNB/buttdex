@@ -459,4 +459,39 @@ canvas.confetti-canvas {
   height: 100%;
   z-index: 1000;
   pointer-events: none;
+}
+
+/* Fortune Cookie Animation */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.fortune-cookie-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Shimmer effect for the fortune text */
+.fortune-text {
+  background: linear-gradient(90deg, #FFD700 0%, #FFF8DC 50%, #FFD700 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 } 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { launchButtcoinConfetti } from '@/utils/confetti';
 
 // Only use this component during development for testing
 export default function ConfettiTester() {
@@ -22,7 +21,7 @@ export default function ConfettiTester() {
           onClick={triggerConfetti}
           className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded shadow-lg"
         >
-          Test Confetti
+          Test Fortune
         </button>
       ) : (
         <button

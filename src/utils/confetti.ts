@@ -8,7 +8,10 @@ export interface ConfettiOptions {
   ticks?: number;
 }
 
-export const launchButtcoinConfetti = (options: ConfettiOptions = {}) => {
+export const launchButtcoinConfetti = (
+  options: ConfettiOptions = {}, 
+  onComplete?: () => void
+) => {
   if (typeof window === 'undefined') return;
 
   // Dynamically import the confetti module
@@ -55,12 +58,23 @@ export const launchButtcoinConfetti = (options: ConfettiOptions = {}) => {
           particleCount: Math.floor(mergedOptions.particleCount / 2),
           origin: { x: 0.6, y: 0.7 },
         });
+
+        // Call onComplete after confetti animation
+        if (onComplete) {
+          // Wait a bit longer than the confetti animation
+          const totalDuration = mergedOptions.ticks ? mergedOptions.ticks * 10 : 2000;
+          setTimeout(onComplete, totalDuration);
+        }
       }, 400);
       
     } catch (error) {
       console.error('Failed to create confetti:', error);
+      // Still call onComplete even if confetti fails
+      if (onComplete) onComplete();
     }
   }).catch(error => {
     console.error('Failed to load confetti library:', error);
+    // Still call onComplete even if confetti fails
+    if (onComplete) onComplete();
   });
 }; 

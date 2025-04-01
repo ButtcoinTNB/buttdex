@@ -1,15 +1,18 @@
 'use client';
 
 import Script from 'next/script';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import DirectTerminal from '@/components/DirectTerminal';
 import ThemeToggle from '@/components/ThemeToggle';
 import ThemeLogo from '@/components/ThemeLogo';
 import { launchButtcoinConfetti } from '@/utils/confetti';
 import ConfettiTester from '@/components/ConfettiTester';
+import FortuneCookie from '@/components/FortuneCookie';
 
 export default function Home() {
+  const [showFortuneCookie, setShowFortuneCookie] = useState(false);
+  
   // Listen for swap success events
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -18,12 +21,16 @@ export default function Home() {
       const customEvent = event as CustomEvent<{ txid: string }>;
       console.log('Swap success event received:', customEvent.detail.txid);
       
-      // Launch buttcoin confetti celebration
-      launchButtcoinConfetti({
-        particleCount: 100,
-        spread: 90,
-        startVelocity: 40,
-      });
+      // Launch buttcoin confetti celebration with callback
+      launchButtcoinConfetti(
+        {
+          particleCount: 100,
+          spread: 90,
+          startVelocity: 40,
+        },
+        // Show fortune cookie when confetti ends
+        () => setShowFortuneCookie(true)
+      );
     };
     
     // Add event listener
@@ -83,6 +90,12 @@ export default function Home() {
           </a>
         </div>
       </div>
+      
+      {/* Fortune Cookie component */}
+      <FortuneCookie 
+        visible={showFortuneCookie} 
+        onClose={() => setShowFortuneCookie(false)} 
+      />
       
       {/* Only show test button in development */}
       {isDev && <ConfettiTester />}

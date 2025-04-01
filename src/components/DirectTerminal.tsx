@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import type { JupiterTerminal as JupiterTerminalType } from '@/types/jupiter-terminal';
 import { initPhantomDeeplinkHandler } from '@/utils/phantom/jupiter-deeplink-handler';
 import { detectDevice } from '@/utils/device-detection';
@@ -24,7 +23,6 @@ export default function DirectTerminal() {
   const [isLoaded, setIsLoaded] = useState(false);
   const terminalId = 'integrated-terminal';
   const deviceInfo = detectDevice();
-  const wallet = useWallet();
   
   // Initialize Phantom deeplink handler for mobile only
   useEffect(() => {
@@ -94,15 +92,10 @@ export default function DirectTerminal() {
         appearance: 'dark',
         defaultExplorer: 'Solana Explorer',
         strictTokenList: true,
-        // Use auto for wallet connection to avoid context conflicts
         walletConnectionStrategy: 'auto',
-        // Ensure wallet features are accessible
         enableWalletPassthrough: false,
         passThoughWalletTokenAccounts: false,
-        // Add explicit token program config
-        tokenProgramVersion: 'token-2022',
-        // Ensure clean wallet context
-        containerClassName: 'jupiter-terminal-container',
+        containerClassName: 'jupiter-terminal-container jupiter-terminal-custom',
         containerStyles: {
           width: '100%',
           height: '100%',

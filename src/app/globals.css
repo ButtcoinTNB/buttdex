@@ -7,8 +7,8 @@
   --text-color: black;
   --secondary-text-color: #333;
   --footer-text-color: #777;
-  --terminal-bg-color: #F2A900;
-  --social-bg-color: #F2A900;
+  --terminal-bg-color: #F8921C;
+  --social-bg-color: #F8921C;
   --social-hover-color: #FFB733;
   --shadow-color: rgba(242, 169, 0, 0);
 }
@@ -18,8 +18,8 @@
   --text-color: white;
   --secondary-text-color: #e0e0e0;
   --footer-text-color: #aaa;
-  --terminal-bg-color: #F2A900;
-  --social-bg-color: #F2A900;
+  --terminal-bg-color: #F8921C;
+  --social-bg-color: #F8921C;
   --social-hover-color: #FFB733;
   --shadow-color: rgba(242, 169, 0, 0.2);
 }
@@ -97,8 +97,8 @@ h1 {
 
 .title-special {
   font-style: italic;
-  -webkit-text-stroke: 1px #F2A900;
-  text-shadow: 0 0 2px #F2A900;
+  -webkit-text-stroke: 1px #F8921C;
+  text-shadow: 0 0 2px #F8921C;
 }
 
 .terminal-content {
@@ -121,7 +121,7 @@ h1 {
   background-color: #1C1C1C !important;
   pointer-events: auto !important;
   z-index: 5;
-  border: 2px solid #F2A900;
+  border: 2px solid #F8921C;
 }
 
 /* Ensuring Jupiter elements are visible */
@@ -197,7 +197,7 @@ h1 {
 }
 
 .community-message a {
-  color: #F2A900;
+  color: #F8921C;
   text-decoration: none;
   font-weight: bold;
   transition: color 0.2s ease;
@@ -400,13 +400,13 @@ h1 {
 /* Add title-special styling */
 .title-special {
   font-style: italic;
-  -webkit-text-stroke: 1px #F2A900;
-  text-shadow: 0 0 2px #F2A900;
+  -webkit-text-stroke: 1px #F8921C;
+  text-shadow: 0 0 2px #F8921C;
 }
 
 /* Style community links with Jupiter orange color */
 .community-message a {
-  color: #F2A900;
+  color: #F8921C;
   text-decoration: none;
   font-weight: bold;
   transition: color 0.2s ease;

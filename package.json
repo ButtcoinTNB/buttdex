@@ -35,7 +35,7 @@
     "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/istanbul-lib-report": "^3.0.3",
     "@types/istanbul-reports": "^3.0.4",
-    "@types/node": "^20.17.28",
+    "@types/node": "^22.14.0",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.21",
